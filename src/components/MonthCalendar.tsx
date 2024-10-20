@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react'
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react"
 import Popover from "@/components/Popover"
 
 interface Event {
@@ -111,17 +111,33 @@ export function MonthCalendar() {
 
   return (
     <div ref={calendarRef} className="flex-1 bg-white rounded-lg shadow-md overflow-hidden flex flex-col relative">
-      <div className="flex justify-between items-center p-3 bg-gray-50 border-b">
-        <Button variant="ghost" className="text-gray-600 text-xs px-2 py-1 h-auto hover:bg-gray-100" onClick={goToToday}>Today</Button>
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-500 hover:text-gray-700" onClick={() => changeMonth(-1)}><ChevronLeft className="h-4 w-4" /></Button>
+      <div className="flex justify-between items-center px-4 py-2 bg-white border-b">
+        <div className="flex items-center space-x-2">
           <h2 className="text-lg font-semibold text-gray-800">{formatMonthYear(currentDate)}</h2>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-500 hover:text-gray-700" onClick={() => changeMonth(1)}><ChevronRight className="h-4 w-4" /></Button>
+          <div className="flex items-center">
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => changeMonth(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => changeMonth(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex border rounded-md bg-white shadow-sm">
-          <Button variant="ghost" className="rounded-r-none border-r px-2 py-0.5 h-5 text-xs hover:bg-gray-100">Day</Button>
-          <Button variant="ghost" className="rounded-none border-r px-2 py-0.5 h-5 text-xs hover:bg-gray-100">Week</Button>
-          <Button variant="ghost" className="rounded-l-none bg-[#ECFCCB] px-2 py-0.5 h-5 text-xs hover:bg-[#E2F5B5]">Month</Button>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs font-medium h-7 px-2"
+            onClick={goToToday}
+          >
+            <CalendarIcon className="mr-1 h-3 w-3" />
+            Today
+          </Button>
+          <div className="flex border rounded-md bg-gray-100 p-0.5">
+            <Button variant="ghost" size="sm" className="text-xs px-2 py-0.5 h-6 rounded-sm">Day</Button>
+            <Button variant="ghost" size="sm" className="text-xs px-2 py-0.5 h-6 rounded-sm">Week</Button>
+            <Button variant="secondary" size="sm" className="text-xs px-2 py-0.5 h-6 bg-white shadow-sm rounded-sm">Month</Button>
+          </div>
         </div>
       </div>
 
@@ -136,10 +152,10 @@ export function MonthCalendar() {
           return (
             <div 
               key={index} 
-              className={`p-1 bg-white hover:bg-gray-50 transition-colors duration-150 ease-in-out ${!isCurrentMonth && 'bg-gray-50'} ${dayIsToday && 'ring-1 ring-blue-400 ring-inset'}`}
+              className={`p-1 bg-white hover:bg-gray-50 transition-colors duration-150 ease-in-out ${!isCurrentMonth && 'bg-gray-50'} ${dayIsToday && 'bg-green-50'}`}
               onClick={(e) => handleDateClick(date, e)}
             >
-              <div className={`text-right text-xs ${isCurrentMonth ? (dayIsToday ? 'text-blue-600 font-semibold' : 'text-gray-700') : 'text-gray-400'}`}>
+              <div className={`text-right text-xs ${isCurrentMonth ? (dayIsToday ? 'text-green-600 font-semibold' : 'text-gray-700') : 'text-gray-400'}`}>
                 {date.getDate()}
               </div>
               {event && (
