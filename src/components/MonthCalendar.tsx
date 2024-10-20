@@ -1,7 +1,10 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react"
 import Popover from "@/components/Popover"
+import { EventDetails } from "@/components/EventDetails"
+import { CalendarViewPicker } from "@/components/CalendarViewPicker"
+import { useCalendarStore } from '@/services/calendarService';
 
 interface Event {
   id: string;
@@ -13,22 +16,35 @@ interface Event {
   description?: string;
 }
 
-const events: Event[] = [
-  { id: 'CR-014/23', title: 'Client Review', date: new Date(2024, 9, 9), color: 'bg-indigo-100', textColor: 'text-indigo-700', borderColor: 'border-indigo-400', description: 'Annual review with client XYZ' },
-  { id: 'CHU-16/24', title: 'Team Check-up', date: new Date(2024, 9, 16), color: 'bg-pink-100', textColor: 'text-pink-700', borderColor: 'border-pink-400', description: 'Monthly team progress meeting' },
-  { id: 'VAC-01/23', title: 'Vacation', date: new Date(2024, 9, 20), color: 'bg-orange-100', textColor: 'text-orange-700', borderColor: 'border-orange-400', description: 'Team building retreat' },
-  { id: 'REQ-02/23', title: 'Requirements Gathering', date: new Date(2024, 9, 24), color: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-400', description: 'Initial meeting for new project' },
-];
+interface MonthCalendarProps {
+  todayButtonClass: string;
+  currentDate: Date;
+}
 
-export function MonthCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+export function MonthCalendar({ todayButtonClass, currentDate: initialDate }: MonthCalendarProps) {
+  const events = useCalendarStore(state => state.events);
+  const fetchEvents = useCalendarStore(state => state.fetchEvents);
+  const [displayDate, setDisplayDate] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
+  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const calendarRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  useEffect(() => {
+    console.log("Current events:", events); // Debug log
+  }, [events]);
+
+  useEffect(() => {
+    setDisplayDate(initialDate);
+  }, [initialDate]);
+
   const changeMonth = useCallback((delta: number) => {
-    setCurrentDate(prevDate => {
+    setDisplayDate(prevDate => {
       const newDate = new Date(prevDate);
       newDate.setMonth(newDate.getMonth() + delta);
       return newDate;
@@ -36,12 +52,12 @@ export function MonthCalendar() {
   }, []);
 
   const goToToday = useCallback(() => {
-    setCurrentDate(new Date());
+    setDisplayDate(new Date());
   }, []);
 
   const daysInMonth = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
+    const year = displayDate.getFullYear();
+    const month = displayDate.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     
@@ -64,7 +80,25 @@ export function MonthCalendar() {
     }
     
     return days;
-  }, [currentDate]);
+  }, [displayDate]);
+
+  const daysInWeek = useMemo(() => {
+    const startOfWeek = new Date(displayDate);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(startOfWeek);
+      date.setDate(date.getDate() + i);
+      return { date, isCurrentMonth: date.getMonth() === displayDate.getMonth() };
+    });
+  }, [displayDate]);
+
+  const hoursInDay = useMemo(() => {
+    return Array.from({ length: 24 }, (_, i) => {
+      const date = new Date(displayDate);
+      date.setHours(i, 0, 0, 0);
+      return date;
+    });
+  }, [displayDate]);
 
   const formatMonthYear = (date: Date) => {
     return date.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -82,24 +116,23 @@ export function MonthCalendar() {
       const calendarRect = calendarRef.current.getBoundingClientRect();
       const cellRect = event.currentTarget.getBoundingClientRect();
       
-      const popoverWidth = 250; // This should match the width in the Popover component
-      const estimatedPopoverHeight = 100; // Estimate a reasonable height
+      const popoverWidth = 250;
+      const estimatedPopoverHeight = 100;
       
       let top = cellRect.bottom - calendarRect.top;
       let left = cellRect.left - calendarRect.left;
       
-      // Adjust if too close to the right edge
       if (left + popoverWidth > calendarRect.width) {
         left = calendarRect.width - popoverWidth;
       }
       
-      // Adjust if too close to the bottom edge
       if (top + estimatedPopoverHeight > calendarRect.height) {
         top = cellRect.top - calendarRect.top - estimatedPopoverHeight;
       }
       
       setPopoverPosition({ top, left });
     }
+    
     setSelectedDate(date);
     setIsPopoverOpen(true);
   };
@@ -109,94 +142,229 @@ export function MonthCalendar() {
     setSelectedDate(null);
   };
 
+  const handleViewChange = (view: 'day' | 'week' | 'month') => {
+    setCurrentView(view);
+  };
+
+  const changeDate = useCallback((delta: number) => {
+    setDisplayDate(prevDate => {
+      const newDate = new Date(prevDate);
+      switch (currentView) {
+        case 'day':
+          newDate.setDate(newDate.getDate() + delta);
+          break;
+        case 'week':
+          newDate.setDate(newDate.getDate() + delta * 7);
+          break;
+        case 'month':
+          newDate.setMonth(newDate.getMonth() + delta);
+          break;
+      }
+      return newDate;
+    });
+  }, [currentView]);
+
+  const renderMonthView = () => (
+    <div className="flex-grow grid grid-cols-7 grid-rows-[auto_repeat(6,1fr)] gap-px bg-gray-200 overflow-auto">
+      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+        <div key={day} className="text-center font-medium py-2 bg-gray-50 text-xs text-gray-500">{day}</div>
+      ))}
+      {daysInMonth.map(({ date, isCurrentMonth }, index) => {
+        const dayEvents = events.filter(e => 
+          e.date.getFullYear() === date.getFullYear() &&
+          e.date.getMonth() === date.getMonth() &&
+          e.date.getDate() === date.getDate()
+        );
+        const dayIsToday = isToday(date);
+
+        return (
+          <div 
+            key={index} 
+            className={`p-1 transition-colors duration-150 ease-in-out
+              ${!isCurrentMonth ? 'bg-gray-50 hover:bg-gray-100' : 'bg-white hover:bg-gray-50'}
+              ${dayIsToday ? 'bg-green-100 hover:bg-green-200' : ''}
+            `}
+            onClick={(e) => handleDateClick(date, e)}
+          >
+            <div className={`text-right text-xs
+              ${isCurrentMonth ? (dayIsToday ? 'text-green-800 font-semibold' : 'text-gray-700') : 'text-gray-400'}
+            `}>
+              {date.getDate()}
+            </div>
+            {dayEvents.map((event, eventIndex) => (
+              <div key={eventIndex} className={`mt-1 px-1 py-0.5 text-[10px] ${event.color} ${event.textColor} rounded border-l ${event.borderColor} truncate`}>
+                {event.title}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderWeekView = () => (
+    <div className="flex-grow flex flex-col h-full">
+      <div className="grid grid-cols-8 border-b border-gray-200">
+        <div className="p-2 text-center text-xs font-medium text-gray-500"></div>
+        {daysInWeek.map(({ date }, index) => {
+          const dayIsToday = isToday(date);
+          return (
+            <div 
+              key={index} 
+              className={`p-1 text-center border-l border-gray-200 ${dayIsToday ? 'bg-gray-50' : ''}`}
+            >
+              <div className="text-xs font-medium text-gray-900">
+                {date.toLocaleDateString('en-US', { weekday: 'short' })}
+              </div>
+              <div className={`text-xs ${dayIsToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                {date.getDate()}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex-grow overflow-auto">
+        <div className="grid grid-cols-8 h-full divide-x divide-gray-200">
+          <div className="col-span-1">
+            {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+              <div key={hour} className="h-10 text-right pr-2 text-xs text-gray-500 relative">
+                <span className="absolute top-[-0.5em] right-2">
+                  {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                </span>
+              </div>
+            ))}
+          </div>
+          {daysInWeek.map(({ date }, dayIndex) => (
+            <div key={dayIndex} className="col-span-1 relative">
+              {Array.from({ length: 24 }, (_, hour) => (
+                <div key={hour} className="h-10 border-t border-gray-100"></div>
+              ))}
+              {events
+                .filter(e => e.date.toDateString() === date.toDateString())
+                .map((event, eventIndex) => {
+                  const startHour = event.date.getHours();
+                  const startMinute = event.date.getMinutes();
+                  const duration = 2; // Assume 2 hour duration for this example
+                  return (
+                    <div
+                      key={eventIndex}
+                      className={`absolute left-1 right-1 ${event.color} ${event.textColor} rounded-sm p-1 overflow-hidden`}
+                      style={{
+                        top: `${startHour * 2.5 + (startMinute / 60) * 2.5}rem`,
+                        height: `${duration * 2.5}rem`,
+                      }}
+                      onClick={(e) => handleDateClick(event.date, e)}
+                    >
+                      <div className="text-xs font-semibold">{event.title}</div>
+                      <div className="text-xs">
+                        {event.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDayView = () => (
+    <div className="flex-grow overflow-auto">
+      <div className="grid grid-cols-[auto_1fr] gap-2">
+        {hoursInDay.map((hour, index) => (
+          <React.Fragment key={index}>
+            <div className="text-right pr-2 py-2 text-xs text-gray-500">
+              {hour.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })}
+            </div>
+            <div className="border-t border-gray-200 py-2">
+              {events
+                .filter(e => e.date.toDateString() === displayDate.toDateString() && e.date.getHours() === hour.getHours())
+                .map((event, eventIndex) => (
+                  <div 
+                    key={eventIndex}
+                    className={`px-2 py-1 text-xs ${event.color} ${event.textColor} rounded border-l ${event.borderColor} mb-1`}
+                    onClick={(e) => handleDateClick(event.date, e)}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div ref={calendarRef} className="flex-1 bg-white rounded-lg shadow-md overflow-hidden flex flex-col relative">
       <div className="flex justify-between items-center px-4 py-2 bg-white border-b">
         <div className="flex items-center space-x-2">
-          <h2 className="text-lg font-semibold text-gray-800">{formatMonthYear(currentDate)}</h2>
           <div className="flex items-center">
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => changeMonth(-1)}>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => changeDate(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => changeMonth(1)}>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => changeDate(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+          <h2 className="text-lg font-semibold text-gray-800">
+            {currentView === 'day' 
+              ? displayDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+              : currentView === 'week'
+                ? `${daysInWeek[0].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${daysInWeek[6].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                : formatMonthYear(displayDate)
+            }
+          </h2>
         </div>
         <div className="flex items-center space-x-2">
           <Button 
             variant="outline" 
             size="sm" 
-            className="text-xs font-medium h-7 px-2"
+            className={`font-medium flex items-center justify-center ${todayButtonClass}`}
             onClick={goToToday}
           >
             <CalendarIcon className="mr-1 h-3 w-3" />
             Today
           </Button>
-          <div className="flex border rounded-md bg-gray-100 p-0.5">
-            <Button variant="ghost" size="sm" className="text-xs px-2 py-0.5 h-6 rounded-sm">Day</Button>
-            <Button variant="ghost" size="sm" className="text-xs px-2 py-0.5 h-6 rounded-sm">Week</Button>
-            <Button variant="secondary" size="sm" className="text-xs px-2 py-0.5 h-6 bg-white shadow-sm rounded-sm">Month</Button>
-          </div>
+          <CalendarViewPicker currentView={currentView} onViewChange={handleViewChange} />
         </div>
       </div>
 
-      <div className="flex-grow grid grid-cols-7 grid-rows-[auto_repeat(6,1fr)] gap-px bg-gray-200 overflow-auto">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-          <div key={day} className="text-center font-medium py-2 bg-gray-50 text-xs text-gray-500">{day}</div>
-        ))}
-        {daysInMonth.map(({ date, isCurrentMonth }, index) => {
-          const event = events.find(e => e.date.getTime() === date.getTime());
-          const dayIsToday = isToday(date);
+      {currentView === 'month' && renderMonthView()}
+      {currentView === 'week' && renderWeekView()}
+      {currentView === 'day' && renderDayView()}
 
-          return (
-            <div 
-              key={index} 
-              className={`p-1 bg-white hover:bg-gray-50 transition-colors duration-150 ease-in-out ${!isCurrentMonth && 'bg-gray-50'} ${dayIsToday && 'bg-green-50'}`}
-              onClick={(e) => handleDateClick(date, e)}
-            >
-              <div className={`text-right text-xs ${isCurrentMonth ? (dayIsToday ? 'text-green-600 font-semibold' : 'text-gray-700') : 'text-gray-400'}`}>
-                {date.getDate()}
-              </div>
-              {event && (
-                <div className={`mt-1 px-1 py-0.5 text-[10px] ${event.color} ${event.textColor} rounded border-l ${event.borderColor} truncate`}>
-                  {event.title}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {selectedDate && (
+      {selectedDate && isPopoverOpen && (
         <Popover 
           isOpen={isPopoverOpen} 
           onClose={closePopover}
           position={popoverPosition}
-          color={events.find(e => e.date.getTime() === selectedDate.getTime())?.color || 'bg-white'}
+          color={events.find(e => 
+            e.date.getFullYear() === selectedDate.getFullYear() &&
+            e.date.getMonth() === selectedDate.getMonth() &&
+            e.date.getDate() === selectedDate.getDate()
+          )?.color || 'bg-white'}
         >
-          <EventDetails 
-            event={events.find(e => e.date.getTime() === selectedDate.getTime())}
-            date={selectedDate}
-          />
+          {events.some(e => 
+            e.date.getFullYear() === selectedDate.getFullYear() &&
+            e.date.getMonth() === selectedDate.getMonth() &&
+            e.date.getDate() === selectedDate.getDate()
+          ) ? (
+            <EventDetails 
+              event={events.find(e => 
+                e.date.getFullYear() === selectedDate.getFullYear() &&
+                e.date.getMonth() === selectedDate.getMonth() &&
+                e.date.getDate() === selectedDate.getDate()
+              )}
+              date={selectedDate}
+            />
+          ) : (
+            <div className="p-4">
+              <p className="text-sm text-gray-600">No events scheduled for this day.</p>
+            </div>
+          )}
         </Popover>
-      )}
-    </div>
-  )
-}
-
-function EventDetails({ event, date }: { event?: Event, date: Date }) {
-  return (
-    <div className="text-xs">
-      <p className="font-semibold">{date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-      {event ? (
-        <>
-          <p className="mt-1 font-medium">{event.title}</p>
-          <p className="text-gray-600">{event.id}</p>
-          {event.description && <p className="mt-1">{event.description}</p>}
-        </>
-      ) : (
-        <p className="mt-1">No events scheduled</p>
       )}
     </div>
   )
