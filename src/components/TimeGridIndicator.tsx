@@ -9,7 +9,16 @@ interface TimeGridIndicatorProps {
 
 export const TimeGridIndicator: React.FC<TimeGridIndicatorProps> = ({ currentTime, showIndicator, hourHeight }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [time, setTime] = useState(currentTime);
   const gridIndicatorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -33,8 +42,8 @@ export const TimeGridIndicator: React.FC<TimeGridIndicatorProps> = ({ currentTim
 
   if (!showIndicator) return null;
 
-  const minutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-  const top = (minutes / 60) * hourHeight + 30; // Add 30px for the half-hour row at the top
+  const minutes = time.getHours() * 60 + time.getMinutes();
+  const top = (minutes / 60) * hourHeight;
 
   return (
     <div
@@ -43,7 +52,7 @@ export const TimeGridIndicator: React.FC<TimeGridIndicatorProps> = ({ currentTim
       style={{ top: `${top}px`, height: '2px' }}
     >
       <div className="border-t border-red-400 absolute left-0 right-0" />
-      <TimeIndicator currentTime={currentTime} isHovered={isHovered} />
+      <TimeIndicator currentTime={time} isHovered={isHovered} />
     </div>
   );
 };
