@@ -168,14 +168,15 @@ export function InteractiveCalendar({ todayButtonClass, currentDate: initialDate
           events={events}
           isToday={isToday}
           handleEventHover={handleEventHover}
+          handleEventLeave={handleEventLeave}
         />
       )}
       {currentView === 'day' && (
         <DayView
-          hoursInDay={hoursInDay}
           events={events}
           displayDate={displayDate}
           handleEventHover={handleEventHover}
+          handleEventLeave={handleEventLeave}
         />
       )}
 

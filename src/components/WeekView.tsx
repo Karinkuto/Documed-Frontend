@@ -7,13 +7,15 @@ interface WeekViewProps {
   events: Event[];
   isToday: (date: Date) => boolean;
   handleEventHover: (event: Event, mouseEvent: React.MouseEvent) => void;
+  handleEventLeave: () => void;
 }
 
 export const WeekView: React.FC<WeekViewProps> = ({
   daysInWeek,
   events,
   isToday,
-  handleEventHover
+  handleEventHover,
+  handleEventLeave
 }) => {
   const currentTime = new Date();
   const hourHeight = 40;
@@ -82,7 +84,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           top: `${(startHour + startMinute / 60) * hourHeight + 20}px`, // Add 20px (half row height) to account for the empty half row
                           height: `${(duration / 60) * hourHeight}px`,
                         }}
-                        onClick={(e) => handleEventHover(event, e)}
+                        onMouseEnter={(e) => handleEventHover(event, e)}
+                        onMouseLeave={handleEventLeave}
                       >
                         <div className="text-xs font-semibold">{event.title}</div>
                         <div className="text-xs">

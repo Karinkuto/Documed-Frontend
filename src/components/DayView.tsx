@@ -6,12 +6,14 @@ interface DayViewProps {
   events: Event[];
   displayDate: Date;
   handleEventHover: (event: Event, mouseEvent: React.MouseEvent) => void;
+  handleEventLeave: () => void;
 }
 
 export const DayView: React.FC<DayViewProps> = ({
   events,
   displayDate,
-  handleEventHover
+  handleEventHover,
+  handleEventLeave
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const hourHeight = 40; // Match the WeekView's hour height
@@ -78,7 +80,8 @@ export const DayView: React.FC<DayViewProps> = ({
                       top: `${(startHour + startMinute / 60) * hourHeight + 20}px`, // Add 20px (half row height) to account for the empty half row
                       height: `${(duration / 60) * hourHeight}px`,
                     }}
-                    onClick={(e) => handleEventHover(event, e)}
+                    onMouseEnter={(e) => handleEventHover(event, e)}
+                    onMouseLeave={handleEventLeave}
                   >
                     <div className="text-xs font-semibold">{event.title}</div>
                     <div className="text-xs">
