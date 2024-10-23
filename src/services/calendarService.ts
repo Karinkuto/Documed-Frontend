@@ -1,21 +1,5 @@
+import { Event } from '../types/Event';
 import { create } from 'zustand'
-
-export interface Event {
-  id: string;
-  title: string;
-  date: Date;
-  color: string;
-  textColor: string;
-  borderColor: string;
-  description?: string;
-  issuer: string;
-  group: string;
-  users: number;
-  status?: 'upcoming' | 'in-progress' | 'completed';
-  location?: string;
-  duration: number; // in minutes
-  avatars: string[]; // URLs for avatar images
-}
 
 interface CalendarState {
   events: Event[];
@@ -56,6 +40,11 @@ export const useCalendarStore = create<CalendarState>((set) => ({
           'https://i.pravatar.cc/150?img=1',
           'https://i.pravatar.cc/150?img=2',
           'https://i.pravatar.cc/150?img=3',
+        ],
+        stats: [
+          { name: "Completed", value: 65 },
+          { name: "In Progress", value: 25 },
+          { name: "Pending", value: 10 }
         ]
       },
       { 
@@ -76,6 +65,11 @@ export const useCalendarStore = create<CalendarState>((set) => ({
           'https://i.pravatar.cc/150?img=4',
           'https://i.pravatar.cc/150?img=5',
           'https://i.pravatar.cc/150?img=6',
+        ],
+        stats: [
+          { name: "Completed", value: 65 },
+          { name: "In Progress", value: 25 },
+          { name: "Pending", value: 10 }
         ]
       },
       { 
@@ -96,6 +90,11 @@ export const useCalendarStore = create<CalendarState>((set) => ({
           'https://i.pravatar.cc/150?img=7',
           'https://i.pravatar.cc/150?img=8',
           'https://i.pravatar.cc/150?img=9',
+        ],
+        stats: [
+          { name: "Completed", value: 65 },
+          { name: "In Progress", value: 25 },
+          { name: "Pending", value: 10 }
         ]
       },
       { 
@@ -116,6 +115,11 @@ export const useCalendarStore = create<CalendarState>((set) => ({
           'https://i.pravatar.cc/150?img=10',
           'https://i.pravatar.cc/150?img=11',
           'https://i.pravatar.cc/150?img=12',
+        ],
+        stats: [
+          { name: "Completed", value: 65 },
+          { name: "In Progress", value: 25 },
+          { name: "Pending", value: 10 }
         ]
       },
     ];

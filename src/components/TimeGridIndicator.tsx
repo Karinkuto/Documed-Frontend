@@ -43,7 +43,7 @@ export const TimeGridIndicator: React.FC<TimeGridIndicatorProps> = ({ currentTim
   if (!showIndicator) return null;
 
   const minutes = time.getHours() * 60 + time.getMinutes();
-  const top = (minutes / 60) * hourHeight;
+  const top = (minutes / 60) * hourHeight + 20; // Add 20px to account for the empty half row at the top
 
   return (
     <div
