@@ -96,17 +96,20 @@ export function InteractiveCalendar({ todayButtonClass, currentDate: initialDate
       const eventRect = mouseEvent.currentTarget.getBoundingClientRect();
       
       const popoverWidth = 300;
-      const estimatedPopoverHeight = 300;
+      const popoverHeight = 150; // Reduced from 300 to keep it closer
       
-      let top = eventRect.bottom - calendarRect.top;
-      let left = eventRect.left - calendarRect.left;
+      // Position popover next to the event block
+      let left = eventRect.right - calendarRect.left + 8; // 8px gap
+      let top = eventRect.top - calendarRect.top;
       
+      // If popover would go off the right edge, show it on the left side of the event
       if (left + popoverWidth > calendarRect.width) {
-        left = calendarRect.width - popoverWidth;
+        left = eventRect.left - calendarRect.left - popoverWidth - 8;
       }
       
-      if (top + estimatedPopoverHeight > calendarRect.height) {
-        top = eventRect.top - calendarRect.top - estimatedPopoverHeight;
+      // If popover would go off the bottom, adjust it upward
+      if (top + popoverHeight > calendarRect.height) {
+        top = Math.max(0, calendarRect.height - popoverHeight);
       }
       
       setPopoverPosition({ top, left });
