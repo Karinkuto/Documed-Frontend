@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onTabChange }) => {
               </AvatarFallback>
             </Avatar>
           ) : (
-            <div className="bg-white rounded-lg p-3 flex items-center justify-between">
+            <div className="bg-[#1f2937] rounded-lg p-3 flex items-center justify-between ">
               <div className="flex items-center">
                 <Avatar className="mr-3">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User avatar" />
@@ -80,8 +80,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onTabChange }) => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold text-sm text-gray-900">{currentUser?.username}</p>
-                  <p className="text-xs text-gray-500">{currentUser?.role}</p>
+                  <p className="font-semibold text-sm text-gray-900 text-white">{currentUser?.username}</p>
+                  <p className="text-xs text-gray-500 text-white">{currentUser?.role}</p>
                 </div>
               </div>
               <button

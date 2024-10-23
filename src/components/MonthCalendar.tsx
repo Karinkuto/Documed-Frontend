@@ -1,10 +1,8 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react"
-import Popover from "@/components/Popover"
 import { EventDetails } from "@/components/EventDetails"
-import { CalendarViewPicker } from "@/components/CalendarViewPicker"
 import { useCalendarStore } from '@/services/calendarService';
+import { AnimatedPopover } from '@/components/AnimatedPopover';
+import { CalendarHeader } from '@/components/CalendarHeader';
 
 interface Event {
   id: string;
@@ -30,6 +28,7 @@ export function MonthCalendar({ todayButtonClass, currentDate: initialDate }: Mo
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const calendarRef = useRef<HTMLDivElement>(null);
+  const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     fetchEvents();
@@ -111,35 +110,33 @@ export function MonthCalendar({ todayButtonClass, currentDate: initialDate }: Mo
            date.getFullYear() === today.getFullYear();
   };
 
-  const handleDateClick = (date: Date, event: React.MouseEvent) => {
+  const handleEventHover = (event: Event, mouseEvent: React.MouseEvent) => {
     if (calendarRef.current) {
       const calendarRect = calendarRef.current.getBoundingClientRect();
-      const cellRect = event.currentTarget.getBoundingClientRect();
+      const eventRect = mouseEvent.currentTarget.getBoundingClientRect();
       
-      const popoverWidth = 250;
-      const estimatedPopoverHeight = 100;
+      const popoverWidth = 300;
+      const estimatedPopoverHeight = 300;
       
-      let top = cellRect.bottom - calendarRect.top;
-      let left = cellRect.left - calendarRect.left;
+      let top = eventRect.bottom - calendarRect.top;
+      let left = eventRect.left - calendarRect.left;
       
       if (left + popoverWidth > calendarRect.width) {
         left = calendarRect.width - popoverWidth;
       }
       
       if (top + estimatedPopoverHeight > calendarRect.height) {
-        top = cellRect.top - calendarRect.top - estimatedPopoverHeight;
+        top = eventRect.top - calendarRect.top - estimatedPopoverHeight;
       }
       
       setPopoverPosition({ top, left });
     }
     
-    setSelectedDate(date);
-    setIsPopoverOpen(true);
+    setHoveredEvent(event);
   };
 
-  const closePopover = () => {
-    setIsPopoverOpen(false);
-    setSelectedDate(null);
+  const handleEventLeave = () => {
+    setHoveredEvent(null);
   };
 
   const handleViewChange = (view: 'day' | 'week' | 'month') => {
@@ -181,10 +178,9 @@ export function MonthCalendar({ todayButtonClass, currentDate: initialDate }: Mo
           <div 
             key={index} 
             className={`p-1 transition-colors duration-150 ease-in-out
-              ${!isCurrentMonth ? 'bg-gray-50 hover:bg-gray-100' : 'bg-white hover:bg-gray-50'}
-              ${dayIsToday ? 'bg-green-100 hover:bg-green-200' : ''}
+              ${!isCurrentMonth ? 'bg-gray-50' : 'bg-white'}
+              ${dayIsToday ? 'bg-green-100' : ''}
             `}
-            onClick={(e) => handleDateClick(date, e)}
           >
             <div className={`text-right text-xs
               ${isCurrentMonth ? (dayIsToday ? 'text-green-800 font-semibold' : 'text-gray-700') : 'text-gray-400'}
@@ -192,7 +188,12 @@ export function MonthCalendar({ todayButtonClass, currentDate: initialDate }: Mo
               {date.getDate()}
             </div>
             {dayEvents.map((event, eventIndex) => (
-              <div key={eventIndex} className={`mt-1 px-1 py-0.5 text-[10px] ${event.color} ${event.textColor} rounded border-l ${event.borderColor} truncate`}>
+              <div 
+                key={eventIndex} 
+                className={`mt-1 px-1 py-0.5 text-[10px] ${event.color} ${event.textColor} rounded border-l ${event.borderColor} truncate cursor-pointer transition-all duration-150 ease-in-out hover:scale-105`}
+                onMouseEnter={(e) => handleEventHover(event, e)}
+                onMouseLeave={handleEventLeave}
+              >
                 {event.title}
               </div>
             ))}
@@ -253,7 +254,7 @@ export function MonthCalendar({ todayButtonClass, currentDate: initialDate }: Mo
                         top: `${startHour * 2.5 + (startMinute / 60) * 2.5}rem`,
                         height: `${duration * 2.5}rem`,
                       }}
-                      onClick={(e) => handleDateClick(event.date, e)}
+                      onClick={(e) => handleEventHover(event, e)}
                     >
                       <div className="text-xs font-semibold">{event.title}</div>
                       <div className="text-xs">
@@ -284,7 +285,7 @@ export function MonthCalendar({ todayButtonClass, currentDate: initialDate }: Mo
                   <div 
                     key={eventIndex}
                     className={`px-2 py-1 text-xs ${event.color} ${event.textColor} rounded border-l ${event.borderColor} mb-1`}
-                    onClick={(e) => handleDateClick(event.date, e)}
+                    onClick={(e) => handleEventHover(event, e)}
                   >
                     {event.title}
                   </div>
@@ -298,74 +299,32 @@ export function MonthCalendar({ todayButtonClass, currentDate: initialDate }: Mo
 
   return (
     <div ref={calendarRef} className="flex-1 bg-white rounded-lg shadow-md overflow-hidden flex flex-col relative">
-      <div className="flex justify-between items-center px-4 py-2 bg-white border-b">
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center">
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => changeDate(-1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => changeDate(1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <h2 className="text-lg font-semibold text-gray-800">
-            {currentView === 'day' 
-              ? displayDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-              : currentView === 'week'
-                ? `${daysInWeek[0].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${daysInWeek[6].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                : formatMonthYear(displayDate)
-            }
-          </h2>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={`font-medium flex items-center justify-center ${todayButtonClass}`}
-            onClick={goToToday}
-          >
-            <CalendarIcon className="mr-1 h-3 w-3" />
-            Today
-          </Button>
-          <CalendarViewPicker currentView={currentView} onViewChange={handleViewChange} />
-        </div>
-      </div>
+      <CalendarHeader
+        displayDate={displayDate}
+        currentView={currentView}
+        daysInWeek={daysInWeek}
+        todayButtonClass={todayButtonClass}
+        onChangeDate={changeDate}
+        onGoToToday={goToToday}
+        onViewChange={handleViewChange}
+      />
 
       {currentView === 'month' && renderMonthView()}
       {currentView === 'week' && renderWeekView()}
       {currentView === 'day' && renderDayView()}
 
-      {selectedDate && isPopoverOpen && (
-        <Popover 
-          isOpen={isPopoverOpen} 
-          onClose={closePopover}
-          position={popoverPosition}
-          color={events.find(e => 
-            e.date.getFullYear() === selectedDate.getFullYear() &&
-            e.date.getMonth() === selectedDate.getMonth() &&
-            e.date.getDate() === selectedDate.getDate()
-          )?.color || 'bg-white'}
-        >
-          {events.some(e => 
-            e.date.getFullYear() === selectedDate.getFullYear() &&
-            e.date.getMonth() === selectedDate.getMonth() &&
-            e.date.getDate() === selectedDate.getDate()
-          ) ? (
-            <EventDetails 
-              event={events.find(e => 
-                e.date.getFullYear() === selectedDate.getFullYear() &&
-                e.date.getMonth() === selectedDate.getMonth() &&
-                e.date.getDate() === selectedDate.getDate()
-              )}
-              date={selectedDate}
-            />
-          ) : (
-            <div className="p-4">
-              <p className="text-sm text-gray-600">No events scheduled for this day.</p>
-            </div>
-          )}
-        </Popover>
-      )}
+      <AnimatedPopover
+        isOpen={hoveredEvent !== null}
+        position={popoverPosition}
+        color={hoveredEvent?.color || 'bg-white'}
+      >
+        {hoveredEvent && (
+          <EventDetails
+            event={hoveredEvent}
+            date={hoveredEvent.date}
+          />
+        )}
+      </AnimatedPopover>
     </div>
   )
 }
