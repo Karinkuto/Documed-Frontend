@@ -8,11 +8,13 @@ import {
   DialogContent,
   DialogClose,
   DialogTitle,
-  DialogDescription,
 } from '@/components/AnimatedDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Briefcase, Clock, XIcon } from 'lucide-react';
+import { Users, Briefcase, Clock, XIcon, Calendar } from 'lucide-react';
 import { Event } from '@/types/Event';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ParticipantsDialog } from '@/components/ParticipantsDialog';
 
 interface IntakeDetailsDialogProps {
   event: Event;
@@ -20,101 +22,126 @@ interface IntakeDetailsDialogProps {
 }
 
 export function IntakeDetailsDialog({ event, children }: IntakeDetailsDialogProps) {
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return 'N/A';
+    return date.toLocaleDateString('en-US', { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getGroupIcon = (group: string | undefined) => {
+    switch (group?.toLowerCase()) {
+      case 'students': return <Users size={14} className="text-[#7EC143]" />;
+      case 'faculty': return <Briefcase size={14} className="text-[#7EC143]" />;
+      default: return <Users size={14} className="text-[#7EC143]" />;
+    }
+  };
+
   return (
     <Dialog>
-      <DialogTrigger>
-        {children}
-      </DialogTrigger>
+      <DialogTrigger>{children}</DialogTrigger>
       <DialogContainer>
-        <DialogContent className="w-[90vw] max-w-3xl rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
-          <DialogClose className="absolute right-4 top-4 z-50 rounded-sm opacity-70 transition-all hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-gray-600">
-            <XIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+        <DialogContent className="w-[90vw] max-w-2xl rounded-xl bg-white p-6 shadow-lg">
+          <DialogClose className="absolute right-4 top-4 z-50 rounded-sm opacity-70 transition-all hover:opacity-100">
+            <XIcon className="h-4 w-4 text-gray-500" />
           </DialogClose>
 
-          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {event.title} - {event.id}
-          </DialogTitle>
-
-          <div className="mt-4 grid gap-4">
-            {/* Basic Info Section */}
-            <div className="grid gap-2">
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                <Clock size={16} />
-                <span>{event.date.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                {event.group?.toLowerCase() === 'students' ? (
-                  <Users size={16} className="text-blue-500" />
-                ) : (
-                  <Briefcase size={16} className="text-green-500" />
-                )}
-                <span>{event.group}</span>
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-medium">Location:</span> {event.location}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-medium">Duration:</span> {event.duration} minutes
-              </div>
+          {/* Title & Status */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3">
+              <DialogTitle className="text-xl font-semibold text-gray-900">
+                {event.title || event.id}
+              </DialogTitle>
+              <Badge className="bg-[#7EC143]/10 text-[#7EC143] font-medium">
+                {event.status || 'upcoming'}
+              </Badge>
             </div>
+          </div>
 
+          {/* Main Content */}
+          <div className="space-y-6">
             {/* Description */}
-            <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-              {event.description}
-            </div>
-
-            {/* Participants Section */}
-            <div className="mt-4">
-              <h3 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                Participants
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
-                {event.avatars.map((avatar, i) => (
-                  <Avatar key={i} className="h-8 w-8">
-                    <AvatarImage src={avatar} alt={`Participant ${i + 1}`} />
-                    <AvatarFallback className="bg-blue-100 text-blue-600">
-                      {String.fromCharCode(65 + i)}
-                    </AvatarFallback>
-                  </Avatar>
-                ))}
-                {event.users > event.avatars.length && (
-                  <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-600">
-                    +{event.users - event.avatars.length} more
-                  </span>
-                )}
+            {event.description && (
+              <div>
+                <p className="text-sm text-gray-600">{event.description}</p>
               </div>
-            </div>
+            )}
 
-            {/* Statistics Section */}
-            {event.stats && (
-              <DialogDescription className="mt-6">
-                <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                  <h3 className="mb-4 text-sm font-medium text-gray-700 dark:text-gray-200">
-                    Statistics
-                  </h3>
-                  <div className="grid gap-2">
-                    {event.stats.map((stat, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">
-                          {stat.name}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-24 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div
-                              className="h-full bg-[#7EC143]"
-                              style={{ width: `${stat.value}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                            {stat.value}%
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+            {/* Key Details */}
+            <div className="grid grid-cols-2 gap-6 py-4 border-y border-gray-100">
+              {/* Left Column */}
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Intake Date</div>
+                  <div className="flex items-center text-sm text-gray-900">
+                    <Clock size={14} className="mr-2 text-[#7EC143]" />
+                    {formatDate(event.date)}
                   </div>
                 </div>
-              </DialogDescription>
-            )}
+
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Location</div>
+                  <div className="text-sm text-gray-900">{event.location || 'Not specified'}</div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Target Group</div>
+                  <div className="flex items-center text-sm text-gray-900">
+                    {getGroupIcon(event.group)}
+                    <span className="ml-2">{event.group || 'All'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Created On</div>
+                  <div className="flex items-center text-sm text-gray-900">
+                    <Calendar size={14} className="mr-2 text-[#7EC143]" />
+                    {formatDate(event.createdAt)}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Issued By</div>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={event.issuerAvatar} />
+                      <AvatarFallback className="bg-[#7EC143]/10 text-[#7EC143]">
+                        {event.issuer?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-gray-900">{event.issuer}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Participants ({event.users})</div>
+                  <ParticipantsDialog participants={event.participants || []}>
+                    <div className="flex items-center gap-1 cursor-pointer hover:opacity-90">
+                      {event.avatars.slice(0, 3).map((avatar, i) => (
+                        <Avatar key={i} className="w-6 h-6 border-2 border-white">
+                          <AvatarImage src={avatar} />
+                          <AvatarFallback className="bg-[#7EC143]/10 text-[#7EC143] text-xs">
+                            {String.fromCharCode(65 + i)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {event.users > 3 && (
+                        <div className="h-6 text-xs ml-2 px-2 py-1 bg-[#7EC143]/10 text-[#7EC143] rounded-full">
+                          +{event.users - 3} more
+                        </div>
+                      )}
+                    </div>
+                  </ParticipantsDialog>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </DialogContainer>

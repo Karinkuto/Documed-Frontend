@@ -1,128 +1,94 @@
-import { Event } from '../types/Event';
-import { create } from 'zustand'
+import { create } from 'zustand';
+import { Event } from '@/types/Event';
+import { mockUsers, getRandomParticipants } from '@/data/mockUsers';
 
-interface CalendarState {
+const getEventColors = (group?: string) => {
+  switch (group?.toLowerCase()) {
+    case 'faculty':
+      return {
+        color: 'bg-green-50',
+        textColor: 'text-green-700',
+        borderColor: 'border-green-200'
+      };
+    case 'students':
+      return {
+        color: 'bg-blue-50',
+        textColor: 'text-blue-700',
+        borderColor: 'border-blue-200'
+      };
+    case 'both':
+      return {
+        color: 'bg-purple-50',
+        textColor: 'text-purple-700',
+        borderColor: 'border-purple-200'
+      };
+    default:
+      return {
+        color: 'bg-gray-50',
+        textColor: 'text-gray-700',
+        borderColor: 'border-gray-200'
+      };
+  }
+};
+
+interface CalendarStore {
   events: Event[];
+  fetchEvents: () => void;
   addEvent: (event: Event) => void;
-  removeEvent: (id: string) => void;
-  updateEvent: (id: string, event: Partial<Event>) => void;
-  fetchEvents: () => Promise<void>;
 }
 
-export const useCalendarStore = create<CalendarState>((set) => ({
+export const useCalendarStore = create<CalendarStore>((set) => ({
   events: [],
-  addEvent: (event) => set((state) => ({ events: [...state.events, event] })),
-  removeEvent: (id) => set((state) => ({ events: state.events.filter(e => e.id !== id) })),
-  updateEvent: (id, updatedEvent) => set((state) => ({
-    events: state.events.map(e => e.id === id ? { ...e, ...updatedEvent } : e)
-  })),
-  fetchEvents: async () => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-
+  fetchEvents: () => {
     const mockEvents: Event[] = [
-      { 
-        id: 'CR-014/23', 
-        title: 'Client Review', 
-        date: new Date(currentYear, currentMonth, 15, 10, 0),
-        color: 'bg-indigo-100', 
-        textColor: 'text-indigo-700', 
-        borderColor: 'border-indigo-400', 
-        description: 'Annual review with client XYZ',
-        issuer: 'John Doe',
+      {
+        id: 'CR-014/23',
+        title: 'Team Check-up',
+        date: new Date('2024-11-15T10:00:00'),
+        createdAt: new Date('2024-11-01T09:00:00'),
+        description: 'Monthly team progress meeting',
         group: 'Both',
-        users: 18,
+        issuer: 'John Doe',
+        issuerAvatar: '/avatars/john.jpg',
         status: 'upcoming',
         location: 'Conference Room A',
-        duration: 120,
-        avatars: [
-          'https://i.pravatar.cc/150?img=1',
-          'https://i.pravatar.cc/150?img=2',
-          'https://i.pravatar.cc/150?img=3',
-        ],
-        stats: [
-          { name: "Completed", value: 65 },
-          { name: "In Progress", value: 25 },
-          { name: "Pending", value: 10 }
-        ]
+        participants: mockUsers.slice(0, 18).map(user => ({
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          status: user.status
+        })),
+        users: 18,
+        avatars: mockUsers.slice(0, 3).map(user => user.avatar),
+        ...getEventColors('Both')
       },
-      { 
-        id: 'CHU-16/24', 
-        title: 'Team Check-up', 
-        date: new Date(currentYear, currentMonth, 20, 14, 30),
-        color: 'bg-pink-100', 
-        textColor: 'text-pink-700', 
-        borderColor: 'border-pink-400', 
-        description: 'Monthly team progress meeting',
-        issuer: 'Jane Smith',
+      {
+        id: 'CHU-16/24',
+        title: 'Department Review',
+        date: new Date('2024-11-20T14:30:00'),
+        createdAt: new Date('2024-11-05T11:00:00'),
+        description: 'Quarterly department performance review',
         group: 'Faculty',
-        users: 23,
+        issuer: 'Jane Smith',
+        issuerAvatar: '/avatars/jane.jpg',
         status: 'upcoming',
         location: 'Meeting Room B',
-        duration: 60,
-        avatars: [
-          'https://i.pravatar.cc/150?img=4',
-          'https://i.pravatar.cc/150?img=5',
-          'https://i.pravatar.cc/150?img=6',
-        ],
-        stats: [
-          { name: "Completed", value: 65 },
-          { name: "In Progress", value: 25 },
-          { name: "Pending", value: 10 }
-        ]
-      },
-      { 
-        id: 'VAC-01/23', 
-        title: 'Vacation', 
-        date: new Date(2023, 9, 26, 9, 0),
-        color: 'bg-orange-100', 
-        textColor: 'text-orange-700', 
-        borderColor: 'border-orange-400', 
-        description: 'Team building retreat',
-        issuer: 'HR Department',
-        group: 'Both',
-        users: 35,
-        status: 'upcoming',
-        location: 'Offsite Resort',
-        duration: 480,
-        avatars: [
-          'https://i.pravatar.cc/150?img=7',
-          'https://i.pravatar.cc/150?img=8',
-          'https://i.pravatar.cc/150?img=9',
-        ],
-        stats: [
-          { name: "Completed", value: 65 },
-          { name: "In Progress", value: 25 },
-          { name: "Pending", value: 10 }
-        ]
-      },
-      { 
-        id: 'REQ-02/23', 
-        title: 'Requirements Gathering', 
-        date: new Date(2023, 9, 27, 13, 0),
-        color: 'bg-blue-100', 
-        textColor: 'text-blue-700', 
-        borderColor: 'border-blue-400', 
-        description: 'Initial meeting for new project',
-        issuer: 'Project Manager',
-        group: 'Students',
-        users: 27,
-        status: 'upcoming',
-        location: 'Lab 101',
-        duration: 180,
-        avatars: [
-          'https://i.pravatar.cc/150?img=10',
-          'https://i.pravatar.cc/150?img=11',
-          'https://i.pravatar.cc/150?img=12',
-        ],
-        stats: [
-          { name: "Completed", value: 65 },
-          { name: "In Progress", value: 25 },
-          { name: "Pending", value: 10 }
-        ]
+        participants: getRandomParticipants(23),
+        users: 23,
+        avatars: getRandomParticipants(23).slice(0, 3).map(p => p.avatar),
+        ...getEventColors('Faculty')
       },
     ];
+
     set({ events: mockEvents });
   },
+  addEvent: (event) => set((state) => ({ 
+    events: [...state.events, {
+      ...event,
+      participants: event.participants || [],
+      avatars: event.participants?.map(p => p.avatar).slice(0, 3) || [],
+      users: event.participants?.length || 0,
+      ...getEventColors(event.group)
+    }] 
+  })),
 }));

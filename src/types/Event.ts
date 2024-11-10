@@ -1,16 +1,31 @@
+export interface Participant {
+  name: string;
+  email: string;
+  avatar: string;
+  status: 'confirmed' | 'pending';
+}
+
+export interface Document {
+  name: string;
+  url: string;
+}
+
 export interface Event {
   id: string;
-  title: string;
+  title?: string;
   date: Date;
-  color: string;
-  textColor: string;
-  borderColor: string;
+  createdAt: Date;
   description?: string;
+  group?: 'Students' | 'Faculty' | 'Both';
   issuer: string;
-  group: string;
+  issuerAvatar?: string;
+  status: 'upcoming' | 'in-progress' | 'completed';
   users: number;
-  status?: 'upcoming' | 'in-progress' | 'completed';
+  avatars: string[];
   location?: string;
-  duration: number; // in minutes
-  avatars: string[]; // URLs for avatar images
+  participants: Participant[];
+  documents?: Document[];
+  color?: string;
+  textColor?: string;
+  borderColor?: string;
 }

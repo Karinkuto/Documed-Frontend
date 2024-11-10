@@ -6,7 +6,7 @@ export function Calendar() {
   const currentDate = new Date() // Get the current date
 
   return (
-    <div className="flex space-x-6 h-[calc(119vh-1rem)]">
+    <div className="flex space-x-6 h-full">
       <IntakeCalendar todayButtonClass={todayButtonClass} currentDate={currentDate} />
       <InteractiveCalendar todayButtonClass={todayButtonClass} currentDate={currentDate} />
     </div>
