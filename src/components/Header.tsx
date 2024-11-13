@@ -1,5 +1,5 @@
-import { Bell } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { NotificationsDropdown } from "@/components/NotificationsDropdown"
 
 export default function Header() {
   return (
@@ -17,8 +17,8 @@ export default function Header() {
           />
         </div>
       </div>
-      <div className="flex-shrink-0 w-64 flex items-center justify-end">
-        <Bell className="text-gray-500 h-5 w-5 mr-8" />
+      <div className="flex-shrink-0 w-64 flex items-center justify-end pr-6">
+        <NotificationsDropdown />
       </div>
     </header>
   )

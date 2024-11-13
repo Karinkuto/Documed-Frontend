@@ -4,13 +4,24 @@ interface User {
   username: string;
   password: string;
   role: UserRole;
+  fullName: string;
+  email: string;
+  avatar?: string;
+  department?: string;
 }
 
 const users: User[] = [
-  { username: 'admin', password: 'admin123', role: 'admin' },
-  { username: 'medical', password: 'medical123', role: 'medical' },
-  { username: 'faculty', password: 'faculty123', role: 'faculty' },
-  { username: 'student', password: 'student123', role: 'student' },
+  {
+    username: 'admin',
+    password: 'admin123',
+    role: 'admin',
+    fullName: 'Admin User',
+    email: 'admin@example.com',
+    department: 'Administration'
+  },
+  { username: 'medical', password: 'medical123', role: 'medical', fullName: 'Medical User', email: 'medical@example.com', department: 'Medical' },
+  { username: 'faculty', password: 'faculty123', role: 'faculty', fullName: 'Faculty User', email: 'faculty@example.com', department: 'Faculty' },
+  { username: 'student', password: 'student123', role: 'student', fullName: 'Student User', email: 'student@example.com', department: 'Student' },
 ];
 
 export function authenticateUser(username: string, password: string): User | null {

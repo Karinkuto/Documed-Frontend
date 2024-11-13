@@ -3,19 +3,26 @@ export interface MockUser {
   name: string;
   email: string;
   avatar: string;
-  role: 'Faculty' | 'Student';
+  role: 'Medical' | 'Staff' | 'Teacher' | 'Student' | 'Admin';
   department: string;
   status: 'confirmed' | 'pending';
 }
 
+const DEPARTMENTS = {
+  SE_UG: "Software Engineering - Undergraduate Program",
+  ITS_UG: "Information Technology and Systems - Undergraduate Program",
+  ESE_G: "Enterprise Systems Engineering - Graduate Program",
+  ITM_G: "Information Technology Management - Graduate Program"
+} as const;
+
 export const mockUsers: MockUser[] = [
   {
     id: '1',
-    name: 'John Smith',
+    name: 'Dr. John Smith',
     email: 'john.smith@example.com',
     avatar: '/avatars/john.jpg',
-    role: 'Faculty',
-    department: 'Computer Science',
+    role: 'Medical',
+    department: DEPARTMENTS.SE_UG,
     status: 'confirmed'
   },
   {
@@ -24,7 +31,7 @@ export const mockUsers: MockUser[] = [
     email: 'emma.w@example.com',
     avatar: '/avatars/emma.jpg',
     role: 'Student',
-    department: 'Engineering',
+    department: DEPARTMENTS.SE_UG,
     status: 'pending'
   },
   {
@@ -32,8 +39,8 @@ export const mockUsers: MockUser[] = [
     name: 'Michael Brown',
     email: 'm.brown@example.com',
     avatar: '/avatars/michael.jpg',
-    role: 'Faculty',
-    department: 'Physics',
+    role: 'Teacher',
+    department: DEPARTMENTS.ITS_UG,
     status: 'confirmed'
   },
   {
@@ -42,7 +49,7 @@ export const mockUsers: MockUser[] = [
     email: 'sarah.d@example.com',
     avatar: '/avatars/sarah.jpg',
     role: 'Student',
-    department: 'Mathematics',
+    department: DEPARTMENTS.ITS_UG,
     status: 'confirmed'
   },
   {
@@ -50,8 +57,8 @@ export const mockUsers: MockUser[] = [
     name: 'James Wilson',
     email: 'j.wilson@example.com',
     avatar: '/avatars/james.jpg',
-    role: 'Faculty',
-    department: 'Biology',
+    role: 'Teacher',
+    department: DEPARTMENTS.ESE_G,
     status: 'pending'
   },
   {
@@ -60,7 +67,7 @@ export const mockUsers: MockUser[] = [
     email: 'l.anderson@example.com',
     avatar: '/avatars/lisa.jpg',
     role: 'Student',
-    department: 'Chemistry',
+    department: DEPARTMENTS.ESE_G,
     status: 'confirmed'
   },
   {
@@ -68,8 +75,8 @@ export const mockUsers: MockUser[] = [
     name: 'Robert Taylor',
     email: 'r.taylor@example.com',
     avatar: '/avatars/robert.jpg',
-    role: 'Faculty',
-    department: 'Mathematics',
+    role: 'Teacher',
+    department: DEPARTMENTS.ITM_G,
     status: 'confirmed'
   },
   {
@@ -78,7 +85,7 @@ export const mockUsers: MockUser[] = [
     email: 'e.white@example.com',
     avatar: '/avatars/emily.jpg',
     role: 'Student',
-    department: 'Physics',
+    department: DEPARTMENTS.ITM_G,
     status: 'pending'
   }
 ];
@@ -124,4 +131,43 @@ export const updateUserStatus = (userId: string, status: 'confirmed' | 'pending'
 
 export const removeUser = (userId: string) => {
   allUsers = allUsers.filter(user => user.id !== userId);
-}; 
+};
+
+export const getUserStats = () => {
+  return {
+    medical: allUsers.filter(user => user.role === 'Medical').length,
+    staff: allUsers.filter(user => user.role === 'Staff').length,
+    teachers: allUsers.filter(user => user.role === 'Teacher').length,
+    students: allUsers.filter(user => user.role === 'Student').length,
+    admin: allUsers.filter(user => user.role === 'Admin').length,
+  };
+};
+
+export const getPaginatedUsers = (
+  query: string, 
+  role?: 'Medical' | 'Staff' | 'Teacher' | 'Student' | 'Admin',
+  page: number = 1,
+  pageSize: number = 10
+) => {
+  const filteredUsers = allUsers.filter(user => {
+    const matchesQuery = user.name.toLowerCase().includes(query.toLowerCase()) ||
+                        user.email.toLowerCase().includes(query.toLowerCase()) ||
+                        user.department.toLowerCase().includes(query.toLowerCase());
+    const matchesRole = !role || user.role === role;
+    return matchesQuery && matchesRole;
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / pageSize);
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  
+  return {
+    users: filteredUsers.slice(start, end),
+    totalUsers: filteredUsers.length,
+    totalPages,
+    currentPage: page
+  };
+};
+
+// Export the departments constant for use in other components
+export { DEPARTMENTS };

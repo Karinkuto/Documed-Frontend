@@ -19,6 +19,7 @@ import {
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { XIcon } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
 
 interface DialogContextType {
   isOpen: boolean;
@@ -64,7 +65,7 @@ type DialogProps = {
   transition?: Transition;
 };
 
-function Dialog({ children, transition }: DialogProps) {
+function AnimatedDialogRoot({ children, transition }: DialogProps) {
   return (
     <DialogProvider>
       <MotionConfig transition={transition}>{children}</MotionConfig>
@@ -217,7 +218,7 @@ function DialogContainer({ children }: DialogContainerProps) {
   return createPortal(
     <AnimatePresence initial={false} mode='sync'>
       {isOpen && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-0 z-40">
           <motion.div
             key={`backdrop-${uniqueId}`}
             className='fixed inset-0 h-full w-full bg-black/50 backdrop-blur-sm'
@@ -371,13 +372,10 @@ function DialogClose({ children, className, variants }: DialogCloseProps) {
 }
 
 export {
-  Dialog,
+  AnimatedDialogRoot as Dialog,
   DialogTrigger,
-  DialogContainer,
   DialogContent,
-  DialogClose,
   DialogTitle,
-  DialogSubtitle,
-  DialogDescription,
-  DialogImage,
+  DialogClose,
+  DialogContainer
 };
