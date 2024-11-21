@@ -1,40 +1,69 @@
+import { User } from '@/__mocks__/mockUsers';
+import { MockUser } from '@/data/mockUsers';
+
 type UserRole = 'admin' | 'medical' | 'faculty' | 'student';
 
-interface User {
+interface User extends MockUser {
   username: string;
   password: string;
-  role: UserRole;
-  fullName: string;
-  email: string;
-  avatar?: string;
-  department?: string;
 }
 
-const users: User[] = [
+const users: MockUser[] = [
   {
-    username: 'admin',
-    password: 'admin123',
-    role: 'admin',
-    fullName: 'Admin User',
+    id: 'admin1',
+    name: 'Admin User',
     email: 'admin@example.com',
-    department: 'Administration'
+    avatar: '/avatars/admin.jpg',
+    role: 'Admin',
+    department: 'Administration',
+    status: 'confirmed'
   },
-  { username: 'medical', password: 'medical123', role: 'medical', fullName: 'Medical User', email: 'medical@example.com', department: 'Medical' },
-  { username: 'faculty', password: 'faculty123', role: 'faculty', fullName: 'Faculty User', email: 'faculty@example.com', department: 'Faculty' },
-  { username: 'student', password: 'student123', role: 'student', fullName: 'Student User', email: 'student@example.com', department: 'Student' },
+  {
+    id: 'medical1',
+    name: 'Medical User',
+    email: 'medical@example.com',
+    avatar: '/avatars/medical.jpg',
+    role: 'Medical',
+    department: 'Medical Department',
+    status: 'confirmed'
+  },
+  {
+    id: 'staff1',
+    name: 'Staff User',
+    email: 'staff@example.com',
+    avatar: '/avatars/staff.jpg',
+    role: 'Staff',
+    department: 'Staff Department',
+    status: 'confirmed'
+  }
 ];
 
-export function authenticateUser(username: string, password: string): User | null {
-  const user = users.find(u => u.username === username && u.password === password);
-  return user || null;
+// Store username-password pairs separately for security
+const userCredentials: Record<string, string> = {
+  'admin@example.com': 'admin123',
+  'medical@example.com': 'medical123',
+  'staff@example.com': 'staff123'
+};
+
+export function authenticateUser(email: string, password: string): MockUser | null {
+  console.log('Attempting authentication with:', { email });
+  if (userCredentials[email] === password) {
+    const user = users.find(u => u.email === email);
+    console.log('Authentication result:', user);
+    return user || null;
+  }
+  console.log('Authentication failed: invalid credentials');
+  return null;
 }
 
-export function getCurrentUser(): User | null {
+export function getCurrentUser(): MockUser | null {
   const userJson = localStorage.getItem('currentUser');
+  console.log('Getting current user from localStorage:', userJson);
   return userJson ? JSON.parse(userJson) : null;
 }
 
-export function setCurrentUser(user: User | null): void {
+export function setCurrentUser(user: MockUser | null): void {
+  console.log('Setting current user:', user);
   if (user) {
     localStorage.setItem('currentUser', JSON.stringify(user));
   } else {

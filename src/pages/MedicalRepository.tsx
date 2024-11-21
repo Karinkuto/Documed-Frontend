@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,12 @@ import {
   ArrowUpDown,
   ChevronRight,
 } from "lucide-react";
-import { MedicalRecord } from "@/types/MedicalRecord";
+import type { MedicalRecord } from "@/types/MedicalRecord";
 import { useNavigate, Link } from "react-router-dom";
-import mockMedicalRecords from "@/data/mockData";
-import { StatCard } from "@/components/StatCard";
 import { AddMedicalRecordDialog } from "@/components/AddMedicalRecordDialog";
+import { toast } from "sonner";
+import { useMedicalRecordStore } from "@/stores/medicalRecordStore";
+import { StatCard } from "@/components/StatCard";
 
 type SortField = "name" | "lastVisit" | "status";
 type SortOrder = "asc" | "desc";
@@ -36,283 +37,244 @@ type FilterStatus =
 
 export default function MedicalRepository() {
   useDocumentTitle("Medical Records Repository");
+  const navigate = useNavigate();
+  
+  // Zustand store
+  const { records, isLoading, error, loadRecords, addRecord, searchRecords } = useMedicalRecordStore();
+  
+  // Local state for UI
   const [searchQuery, setSearchQuery] = useState("");
-  const [records, setRecords] = useState<MedicalRecord[]>(mockMedicalRecords);
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-  const navigate = useNavigate();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const filteredAndSortedRecords = records
-    .filter((record) => {
-      const matchesSearch =
-        record.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        record.patientId.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    // Only load if we don't have any records
+    if (!records || records.length === 0) {
+      loadRecords();
+    }
+  }, [loadRecords, records]);
 
-      const matchesStatus =
-        filterStatus === "all" || record.status === filterStatus;
-
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortField) {
-        case "name":
-          comparison = a.patientName.localeCompare(b.patientName);
-          break;
-        case "lastVisit":
-          comparison = a.lastVisit.localeCompare(b.lastVisit);
-          break;
-        case "status":
-          comparison = a.status.localeCompare(b.status);
-          break;
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      // Don't reload if we already have records
+      if (!records || records.length === 0) {
+        loadRecords();
       }
-
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
-
-  const handleAddRecord = (newRecord: Partial<MedicalRecord>) => {
-    setRecords((prevRecords) => [...prevRecords, newRecord as MedicalRecord]);
+      return;
+    }
+    await searchRecords(query);
   };
 
+  const handleAddRecord = async (record: Omit<MedicalRecord, "id">) => {
+    try {
+      const newRecord = await addRecord(record);
+      setIsAddDialogOpen(false);
+      toast.success("Medical record created successfully");
+      // Navigate to the new record
+      navigate(`/medical-profile/${newRecord.id}`);
+    } catch (error) {
+      console.error("Error adding record:", error);
+      toast.error("Failed to create medical record");
+      throw error;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "archived":
+        return "bg-gray-100 text-gray-800";
+      case "missing":
+        return "bg-red-100 text-red-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "complete":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const stats = [
+    {
+      title: "Total Records",
+      value: records?.length?.toString() ?? "0",
+      change: "+2.1%",
+      changeType: "increase" as const,
+    },
+    {
+      title: "Active Records",
+      value: records?.filter((r) => r?.status === "active")?.length?.toString() ?? "0",
+      change: "+1.2%",
+      changeType: "increase" as const,
+    },
+    {
+      title: "Pending Records",
+      value: records?.filter((r) => r?.status === "pending")?.length?.toString() ?? "0",
+      change: "-0.4%",
+      changeType: "decrease" as const,
+    },
+  ];
+
+  const filteredAndSortedRecords = (records || [])
+    .filter((record) => {
+      if (filterStatus === "all") return true;
+      return record.status.toLowerCase() === filterStatus;
+    })
+    .sort((a, b) => {
+      const aValue = sortField === "name" ? a.patientName : a[sortField];
+      const bValue = sortField === "name" ? b.patientName : b[sortField];
+      const modifier = sortOrder === "asc" ? 1 : -1;
+      return aValue > bValue ? modifier : -modifier;
+    });
+
+  // Show error toast if there's an error
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium">Medical Repository</span>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold tracking-tight">Medical Records</h1>
+        <AddMedicalRecordDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+        >
+          <Button className="bg-black text-white hover:bg-black/90">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Record
+          </Button>
+        </AddMedicalRecordDialog>
       </div>
 
-      <div className="space-y-6">
-        <div className="grid grid-cols-4 gap-4">
-          <StatCard title="Total Patients" value="1,234" trend="+12%" />
-          <StatCard title="Active Cases" value="89" trend="+5%" />
-          <StatCard title="Pending Reports" value="23" trend="-2%" />
-          <StatCard title="Recent Updates" value="45" trend="+8%" />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {stats.map((stat) => (
+          <StatCard key={stat.title} {...stat} />
+        ))}
+      </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
                 <Input
+                  placeholder="Search records..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by patient name, ID, or diagnosis..."
-                  className="pl-9"
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={
-                    filterStatus === "active"
-                      ? "bg-green-50 text-green-700 border-green-200"
-                      : ""
-                  }
-                  onClick={() => setFilterStatus("active")}
-                >
-                  Active Cases
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={
-                    filterStatus === "pending"
-                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                      : ""
-                  }
-                  onClick={() => setFilterStatus("pending")}
-                >
-                  Pending
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="gap-2">
-                      <SlidersHorizontal className="h-4 w-4" />
-                      Filter
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => setFilterStatus("all")}>
-                      All Records
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setFilterStatus("active")}>
-                      Active
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setFilterStatus("archived")}
-                    >
-                      Archived
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setFilterStatus("missing")}
-                    >
-                      Missing
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setFilterStatus("pending")}
-                    >
-                      Pending
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setFilterStatus("complete")}
-                    >
-                      Complete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="gap-2">
-                      <ArrowUpDown className="h-4 w-4" />
-                      Sort
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSortField("name");
-                        setSortOrder("asc");
-                      }}
-                    >
-                      Name (A-Z)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSortField("name");
-                        setSortOrder("desc");
-                      }}
-                    >
-                      Name (Z-A)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSortField("lastVisit");
-                        setSortOrder("desc");
-                      }}
-                    >
-                      Latest Visit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSortField("lastVisit");
-                        setSortOrder("asc");
-                      }}
-                    >
-                      Oldest Visit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSortField("status");
-                        setSortOrder("asc");
-                      }}
-                    >
-                      Status
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <AddMedicalRecordDialog onAdd={handleAddRecord}>
-                  <Button className="bg-[#7EC143] hover:bg-[#7EC143]/90">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add New Record
+            </div>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filter
                   </Button>
-                </AddMedicalRecordDialog>
-              </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem onClick={() => setFilterStatus("all")}>
+                    All Records
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("active")}>
+                    Active
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("archived")}>
+                    Archived
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("pending")}>
+                    Pending
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSortField("name");
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    }}
+                  >
+                    By Name
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSortField("lastVisit");
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    }}
+                  >
+                    By Last Visit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSortField("status");
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    }}
+                  >
+                    By Status
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
+          </div>
 
-            <div className="rounded-md border">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="p-4 text-left font-medium text-gray-600">
-                      Patient
-                    </th>
-                    <th className="p-4 text-left font-medium text-gray-600">
-                      ID
-                    </th>
-                    <th className="p-4 text-left font-medium text-gray-600">
-                      Last Visit
-                    </th>
-                    <th className="p-4 text-left font-medium text-gray-600">
-                      Diagnosis
-                    </th>
-                    <th className="p-4 text-left font-medium text-gray-600">
-                      Status
-                    </th>
-                    <th className="p-4 text-left font-medium text-gray-600">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredAndSortedRecords.map((record) => (
-                    <tr
-                      key={record.id}
-                      className="group hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      <td className="p-4">
-                        <div
-                          onClick={() =>
-                            navigate(`/medical-profile/${record.id}`)
-                          }
-                          className="flex items-center gap-3 cursor-pointer hover:text-[#7EC143] transition-colors"
-                        >
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={record.patientAvatar} />
-                            <AvatarFallback>
-                              {record.patientName
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          {record.patientName}
-                        </div>
-                      </td>
-                      <td className="p-4">{record.patientId}</td>
-                      <td className="p-4">{record.lastVisit}</td>
-                      <td className="p-4">{record.diagnosis}</td>
-                      <td className="p-4">
-                        <Badge
-                          variant={
-                            record.status === "active" ? "default" : "secondary"
-                          }
-                        >
-                          {record.status}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              Actions
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem>Edit Record</DropdownMenuItem>
-                            <DropdownMenuItem>
-                              Download Documents
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              Delete Record
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredAndSortedRecords.map((record) => (
+                <div
+                  key={record.id}
+                  className="flex items-center justify-between p-4 bg-white border rounded-lg hover:bg-gray-50 cursor-pointer"
+                  onClick={() => navigate(`/medical-profile/${record.id}`)}
+                >
+                  <div className="flex items-center space-x-4">
+                    <Avatar>
+                      <AvatarImage src={record.patientAvatar} />
+                      <AvatarFallback>
+                        {record.patientName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium">{record.patientName}</h3>
+                      <p className="text-sm text-gray-500">ID: {record.patientId}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <Badge
+                      className={`${getStatusColor(record.status)} capitalize`}
+                    >
+                      {record.status}
+                    </Badge>
+                    <span className="text-sm text-gray-500">
+                      Last Visit: {new Date(record.lastVisit).toLocaleDateString()}
+                    </span>
+                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

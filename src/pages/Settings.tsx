@@ -27,29 +27,29 @@ import { Loader2 } from "lucide-react";
 export default function Settings() {
   useDocumentTitle("Settings");
   const [isSaving, setIsSaving] = useState(false);
-  const { userProfile, updateUserProfile } = useUser();
+  const { user, updateUser } = useUser();
   const [formData, setFormData] = useState({
-    bio: "",
-    phone: "",
-    expertise: "general",
-    isPublicProfile: false,
-    isAvailableConsult: false,
+    bio: user?.bio || "",
+    phone: user?.phone || "",
+    expertise: user?.expertise || "general",
+    isPublicProfile: user?.isPublicProfile || false,
+    isAvailableConsult: user?.isAvailableConsult || false,
   });
 
-  const [bio, setBio] = useState("");
+  const [bio, setBio] = useState(user?.bio || "");
 
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateUserProfile({ fullName: e.target.value });
+    updateUser({ fullName: e.target.value });
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateUserProfile({ email: e.target.value });
+    updateUser({ email: e.target.value });
   };
 
   const handleAvatarChange = (file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      updateUserProfile({ avatar: reader.result as string });
+      updateUser({ avatar: reader.result as string });
     };
     reader.readAsDataURL(file);
   };
@@ -62,8 +62,8 @@ export default function Settings() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Update all form data at once
-      updateUserProfile({
-        ...userProfile,
+      updateUser({
+        ...user,
         ...formData,
       });
 
@@ -135,17 +135,17 @@ export default function Settings() {
                   <div className="relative">
                     <Avatar className="w-24 h-24">
                       <AvatarImage
-                        src={userProfile.avatar}
+                        src={user?.avatar}
                         alt="Profile picture"
                       />
                       <AvatarFallback
                         style={{
                           background: `linear-gradient(45deg, ${stringToColor(
-                            userProfile.fullName || ""
+                            user?.fullName || ""
                           )}, ${stringToColor("Administrator")})`,
                         }}
                       >
-                        {userProfile.fullName.substring(0, 2).toUpperCase()}
+                        {user?.fullName?.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <Button
@@ -173,9 +173,9 @@ export default function Settings() {
                   </div>
                   <div className="text-center sm:text-left">
                     <h2 className="text-xl font-semibold text-gray-900">
-                      {userProfile.fullName}
+                      {user?.fullName}
                     </h2>
-                    <p className="text-sm text-gray-500">{userProfile.email}</p>
+                    <p className="text-sm text-gray-500">{user?.email}</p>
                     <Badge variant="outline" className="mt-2">
                       Administrator
                     </Badge>
@@ -200,7 +200,7 @@ export default function Settings() {
                         </Label>
                         <Input
                           id="fullName"
-                          value={userProfile.fullName}
+                          value={user?.fullName}
                           onChange={handleFullNameChange}
                         />
                       </div>
@@ -212,7 +212,7 @@ export default function Settings() {
                         <Input
                           id="email"
                           type="email"
-                          value={userProfile.email}
+                          value={user?.email}
                           onChange={handleEmailChange}
                         />
                       </div>
@@ -362,12 +362,11 @@ export default function Settings() {
                   onClick={() => {
                     // Reset form to original values
                     setFormData({
-                      bio: userProfile.bio || "",
-                      phone: userProfile.phone || "",
-                      expertise: userProfile.expertise || "general",
-                      isPublicProfile: userProfile.isPublicProfile || false,
-                      isAvailableConsult:
-                        userProfile.isAvailableConsult || false,
+                      bio: user?.bio || "",
+                      phone: user?.phone || "",
+                      expertise: user?.expertise || "general",
+                      isPublicProfile: user?.isPublicProfile || false,
+                      isAvailableConsult: user?.isAvailableConsult || false,
                     });
                   }}
                 >
@@ -394,10 +393,8 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Language</Label>
                 <Select
-                  value={userProfile.language}
-                  onValueChange={(value) =>
-                    updateUserProfile({ language: value })
-                  }
+                  value={user?.language}
+                  onValueChange={(value) => updateUser({ language: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -413,10 +410,8 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Timezone</Label>
                 <Select
-                  value={userProfile.timezone}
-                  onValueChange={(value) =>
-                    updateUserProfile({ timezone: value })
-                  }
+                  value={user?.timezone}
+                  onValueChange={(value) => updateUser({ timezone: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -479,18 +474,18 @@ export default function Settings() {
                       <div className="flex items-center justify-between">
                         <Label>E-mail</Label>
                         <Switch
-                          checked={userProfile.emailNotifications}
+                          checked={user?.emailNotifications}
                           onCheckedChange={(checked) =>
-                            updateUserProfile({ emailNotifications: checked })
+                            updateUser({ emailNotifications: checked })
                           }
                         />
                       </div>
                       <div className="flex items-center justify-between">
                         <Label>SMS</Label>
                         <Switch
-                          checked={userProfile.smsNotifications}
+                          checked={user?.smsNotifications}
                           onCheckedChange={(checked) =>
-                            updateUserProfile({ smsNotifications: checked })
+                            updateUser({ smsNotifications: checked })
                           }
                         />
                       </div>
@@ -587,9 +582,9 @@ export default function Settings() {
                   </p>
                 </div>
                 <Switch
-                  checked={userProfile.twoFactorAuth}
+                  checked={user?.twoFactorAuth}
                   onCheckedChange={(checked) =>
-                    updateUserProfile({ twoFactorAuth: checked })
+                    updateUser({ twoFactorAuth: checked })
                   }
                 />
               </div>

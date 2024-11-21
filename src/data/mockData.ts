@@ -18,7 +18,7 @@ interface PrescriptionHistory {
   status: string;
 }
 
-const mockMedicalRecords: MedicalRecord[] = [
+export const mockMedicalRecords: MedicalRecord[] = [
   {
     id: "REC-001",
     patientId: "567868",
@@ -109,5 +109,3 @@ const mockMedicalRecords: MedicalRecord[] = [
   },
   // Add other records here...
 ];
-
-export default mockMedicalRecords;

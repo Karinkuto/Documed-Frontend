@@ -1,19 +1,25 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   LayoutDashboard,
   Settings,
   Users,
   Bell,
-  LogOut,
+  LogOut as LogOutIcon,
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
   FileText,
+  Home,
+  ClipboardList,
+  AlertCircle,
+  UserCog,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
-import { setCurrentUser } from "@/utils/auth";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 function stringToColor(str: string) {
   let hash = 0;
@@ -29,162 +35,200 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-// Add this new interface for sidebar groups
 interface SidebarGroup {
   label?: string;
   items: {
     icon: React.ReactNode;
     label: string;
     path: string;
+    roles?: string[];
+    badge?: string;
+    badgeVariant?: "default" | "secondary" | "destructive" | "outline";
   }[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userProfile } = useUser();
+  const { user, logout } = useUser();
+  const [mounted, setMounted] = useState(false);
 
-  const handleLogout = () => {
-    setCurrentUser(null);
+  useEffect(() => {
+    setMounted(true);
+    console.log('Sidebar mounted, user data:', user);
+  }, [user]);
+
+  const handleLogout = async () => {
+    console.log('Logging out user');
+    await logout();
     navigate("/login");
   };
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-  };
-
-  // Define sidebar navigation groups
   const sidebarGroups: SidebarGroup[] = [
     {
-      label: "Main",
+      label: "Overview",
       items: [
         {
-          icon: <LayoutDashboard size={20} />,
-          label: "Dashboard",
+          icon: <Home className="h-5 w-5" />,
+          label: "Home",
           path: "/dashboard",
         },
         {
-          icon: <CalendarIcon size={20} />,
+          icon: <CalendarIcon className="h-5 w-5" />,
           label: "Calendar",
           path: "/calendar",
+          badge: "New",
+          badgeVariant: "default",
         },
       ],
     },
     {
-      label: "Management",
+      label: "Medical Management",
       items: [
-        { icon: <Users size={20} />, label: "Users", path: "/users" },
         {
-          icon: <FileText size={20} />,
-          label: "Medical Repository",
+          icon: <ClipboardList className="h-5 w-5" />,
+          label: "Medical Records",
           path: "/medical-repository",
+          roles: ["Admin", "Medical", "Staff"],
+        },
+        {
+          icon: <Users className="h-5 w-5" />,
+          label: "Users",
+          path: "/users",
+          roles: ["Admin", "Medical"],
+          badge: user?.role === "Admin" ? "12 new" : undefined,
+          badgeVariant: "secondary",
         },
       ],
     },
     {
-      label: "System",
+      label: "Communication",
       items: [
         {
-          icon: <Bell size={20} />,
+          icon: <Bell className="h-5 w-5" />,
           label: "Announcements",
           path: "/announcements",
+          badge: "3",
+          badgeVariant: "destructive",
         },
-        { icon: <Settings size={20} />, label: "Settings", path: "/settings" },
+      ],
+    },
+    {
+      label: "Settings",
+      items: [
+        {
+          icon: <Settings className="h-5 w-5" />,
+          label: "Settings",
+          path: "/settings",
+        },
       ],
     },
   ];
 
-  return (
-    <aside
-      className={`bg-gray-900 text-white flex-shrink-0 flex flex-col relative transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-20" : "w-64"
-      }`}
-    >
-      <nav className="mt-6 flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1">
-          {sidebarGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className="mb-6">
-              <div
-                className={`px-4 mb-2 h-6 transition-all duration-300 ease-in-out ${
-                  isCollapsed ? "opacity-0" : "opacity-100"
-                }`}
-              >
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  {group.label}
-                </span>
-              </div>
-              <div className="space-y-1">
-                {group.items.map((item) => (
-                  <SidebarItem
-                    key={item.path}
-                    icon={item.icon}
-                    label={item.label}
-                    onClick={() => handleNavigation(item.path)}
-                    isCollapsed={isCollapsed}
-                    active={location.pathname === item.path}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+  if (!mounted) {
+    return null;
+  }
 
-        <div className="p-3">
-          <div
-            className={`relative h-[68px] transition-all duration-300 ease-in-out ${
-              !isCollapsed ? "bg-[#1f2937] rounded-lg p-4" : ""
-            }`}
-          >
-            <div className="absolute left-2 bottom-3">
-              <Avatar>
-                <AvatarImage src={userProfile.avatar} alt="User avatar" />
-                <AvatarFallback
-                  style={{
-                    background: `linear-gradient(45deg, ${stringToColor(
-                      userProfile.username
-                    )}, ${stringToColor(userProfile.role)})`,
-                  }}
-                >
-                  {userProfile.username.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+  return (
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "bg-[#111827] h-[calc(100vh-80px)] relative transition-all duration-300 group",
+          isCollapsed ? "w-[70px]" : "w-[240px]",
+        )}
+      >
+        {/* Collapse Toggle Button */}
+        <button
+          onClick={onToggle}
+          className={cn(
+            "absolute -right-3 top-4",
+            "bg-[#111827] text-gray-400 hover:text-gray-100",
+            "w-6 h-6 rounded-full flex items-center justify-center",
+            "border-2 border-[#f3f4f6]",
+            "transition-colors z-20"
+          )}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
+
+        <div className="flex flex-col h-full">
+          <div className="flex-1 py-6 flex flex-col">
+            <div className="px-4 mb-6 flex items-center justify-end">
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-[32px]" />
-                <div
-                  className={`ml-3 transition-all duration-300 ease-in-out overflow-hidden ${
-                    isCollapsed ? "w-0 opacity-0" : "w-32 opacity-100"
-                  }`}
-                >
-                  <p className="font-semibold text-sm text-white whitespace-nowrap">
-                    {userProfile.fullName}
-                  </p>
-                  <p className="text-xs text-gray-500 text-white whitespace-nowrap">
-                    {userProfile.role}
-                  </p>
-                </div>
+
+            <nav className="flex-1 px-2 space-y-6">
+              {sidebarGroups.map((group, index) => {
+                const filteredItems = group.items.filter(
+                  (item) =>
+                    !item.roles || (user?.role && item.roles.includes(user.role))
+                );
+
+                if (filteredItems.length === 0) return null;
+
+                return (
+                  <div key={index} className="space-y-2">
+                    {!isCollapsed && group.label && (
+                      <h3 className="px-3 text-sm font-medium text-gray-400">
+                        {group.label}
+                      </h3>
+                    )}
+                    {filteredItems.map((item) => (
+                      <SidebarItem
+                        key={item.path}
+                        icon={item.icon}
+                        label={item.label}
+                        active={location.pathname === item.path}
+                        onClick={() => navigate(item.path)}
+                        isCollapsed={isCollapsed}
+                        badge={item.badge}
+                        badgeVariant={item.badgeVariant}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+            </nav>
+          </div>
+
+          <div className="p-4 border-t border-gray-700">
+            <div className={cn(
+              "flex items-center justify-between",
+              !isCollapsed && "space-x-3"
+            )}>
+              <div className="flex items-center space-x-3 min-w-0">
+                <Avatar className="shrink-0 h-10 w-10">
+                  <AvatarImage src={user?.avatar} alt={user?.name} />
+                  <AvatarFallback className="bg-gray-700 text-gray-200">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {!isCollapsed && (
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-200 truncate">
+                      {user?.name}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">{user?.role}</p>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={handleLogout}
-                className={`text-gray-400 hover:text-red-500 transition-all duration-300 ease-in-out ${
-                  isCollapsed ? "w-0 opacity-0" : "w-8 opacity-100"
-                }`}
-                title="Logout"
-              >
-                <LogOut size={20} strokeWidth={1.5} />
-              </button>
+              {!isCollapsed && (
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                  title="Logout"
+                >
+                  <LogOutIcon className="h-5 w-5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
-      </nav>
-      <button
-        onClick={onToggle}
-        className="absolute -right-3 bottom-[16%] bg-gray-900 text-white rounded-full p-1 border-2 border-[#f3f4f6] transition-transform duration-300 ease-in-out hover:scale-110"
-      >
-        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
-    </aside>
+      </aside>
+    </TooltipProvider>
   );
 };
 
@@ -194,48 +238,98 @@ interface SidebarItemProps {
   active?: boolean;
   onClick?: () => void;
   isCollapsed: boolean;
+  badge?: string;
+  badgeVariant?: "default" | "secondary" | "destructive" | "outline";
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({
+function SidebarItem({
   icon,
   label,
   active = false,
   onClick,
   isCollapsed,
-}) => {
+  badge,
+  badgeVariant = "default",
+}: SidebarItemProps) {
+  // Helper function to determine badge classes based on variant
+  const getBadgeClasses = (isCollapsed: boolean = false) => {
+    const baseClasses = "shrink-0 font-medium";
+    const collapsedClasses = isCollapsed ? "h-4 w-4 p-0 flex items-center justify-center rounded-full text-[10px]" : "";
+    
+    if (badgeVariant === "destructive") {
+      return cn(baseClasses, collapsedClasses, "bg-red-500 text-white");
+    }
+    return cn(baseClasses, collapsedClasses, "bg-white text-black");
+  };
+
   return (
-    <div
-      className={`flex items-center h-10 cursor-pointer hover:bg-gray-800 transition-all duration-300 ease-in-out ${
-        active
-          ? "border-r-4 border-[#7EC143] bg-gray-800"
-          : "border-r-4 border-transparent"
-      }`}
-      onClick={onClick}
-    >
-      <div className="w-20 flex justify-center items-center h-full">
-        <span
-          className={`${
-            active ? "text-[#7EC143]" : "text-white"
-          } transition-colors duration-300 ease-in-out`}
-        >
-          {icon}
-        </span>
-      </div>
-      <div
-        className={`flex items-center h-full transition-all duration-300 ease-in-out overflow-hidden ${
-          isCollapsed ? "w-0 opacity-0" : "w-44 opacity-100"
-        }`}
-      >
-        <span
-          className={`text-sm whitespace-nowrap ${
-            active ? "font-semibold text-[#7EC143]" : "text-white"
-          } transition-colors duration-300 ease-in-out`}
-        >
-          {label}
-        </span>
-      </div>
-    </div>
+    <TooltipProvider>
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onClick}
+            className={cn(
+              "flex items-center w-full px-3 py-2.5 text-sm rounded-lg relative",
+              "transition-colors group",
+              active
+                ? "bg-gray-700/50 text-[#7EC143] font-medium"
+                : "text-gray-400 hover:bg-gray-700/50 hover:text-gray-100"
+            )}
+          >
+            {active && (
+              <div className="absolute right-0 top-0 w-1 h-full bg-[#7EC143] rounded-r-full" />
+            )}
+            <div className="flex items-center min-w-0 flex-1">
+              <span className={cn(
+                "shrink-0",
+                active && "text-[#7EC143]",
+                isCollapsed ? "mx-auto" : "mr-3"
+              )}>{icon}</span>
+              {!isCollapsed && (
+                <span className="truncate">{label}</span>
+              )}
+            </div>
+            {!isCollapsed && badge && (
+              <Badge 
+                variant={badgeVariant}
+                className={cn("ml-3", getBadgeClasses())}
+              >
+                {badge}
+              </Badge>
+            )}
+            {isCollapsed && badge && (
+              <div className="absolute -right-1 -top-1">
+                <Badge 
+                  variant={badgeVariant}
+                  className={getBadgeClasses(true)}
+                >
+                  {typeof badge === 'string' && badge.match(/^\d+$/) ? badge : '•'}
+                </Badge>
+              </div>
+            )}
+          </button>
+        </TooltipTrigger>
+        {isCollapsed && (
+          <TooltipContent 
+            side="right" 
+            sideOffset={20}
+            align="center"
+            className="flex items-center gap-2 bg-gray-800 text-gray-100 border-gray-700 px-3 py-1.5 z-50"
+          >
+            <span className="text-sm whitespace-nowrap">{label}</span>
+            {badge && (
+              <Badge 
+                variant={badgeVariant}
+                className={cn("text-xs", getBadgeClasses())}
+              >
+                {badge}
+              </Badge>
+            )}
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
   );
-};
+}
 
 export default Sidebar;

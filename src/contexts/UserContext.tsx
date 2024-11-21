@@ -1,67 +1,83 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { getCurrentUser } from '@/utils/auth';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { MockUser } from '@/data/mockUsers';
+import { authenticateUser, getCurrentUser, setCurrentUser as setStoredUser } from '@/utils/auth';
 
 interface UserContextType {
-  userProfile: {
-    username: string;
-    fullName: string;
-    email: string;
-    role: string;
-    avatar: string;
-    department: string;
-    language: string;
-    timezone: string;
-    emailNotifications: boolean;
-    smsNotifications: boolean;
-    twoFactorAuth: boolean;
-    bio: string;
-    phone: string;
-    expertise: string;
-    isPublicProfile: boolean;
-    isAvailableConsult: boolean;
-  };
-  updateUserProfile: (profile: Partial<UserContextType['userProfile']>) => void;
+  user: MockUser | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+  updateUser: (updates: Partial<MockUser>) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const authUser = getCurrentUser();
-  
-  const [userProfile, setUserProfile] = useState({
-    username: authUser?.username || 'john.doe',
-    fullName: authUser?.fullName || 'John Doe',
-    email: authUser?.email || 'john.doe@example.com',
-    role: authUser?.role || 'Administrator',
-    avatar: authUser?.avatar || '/avatars/default.png',
-    department: authUser?.department || 'medical',
-    language: 'en',
-    timezone: 'UTC+8',
-    emailNotifications: true,
-    smsNotifications: false,
-    twoFactorAuth: false,
-    bio: '',
-    phone: '',
-    expertise: 'general',
-    isPublicProfile: false,
-    isAvailableConsult: false,
-  });
+  const [user, setUser] = useState<MockUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const updateUserProfile = (profile: Partial<UserContextType['userProfile']>) => {
-    setUserProfile(prev => ({ ...prev, ...profile }));
+  useEffect(() => {
+    // Check for existing session
+    const currentUser = getCurrentUser();
+    console.log('UserProvider: Initial user check:', currentUser);
+    if (currentUser) {
+      setUser(currentUser);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    console.log('UserProvider: Attempting login with email:', email);
+    const authenticatedUser = authenticateUser(email, password);
+    if (authenticatedUser) {
+      console.log('UserProvider: Login successful:', authenticatedUser);
+      setStoredUser(authenticatedUser);
+      setUser(authenticatedUser);
+      setIsAuthenticated(true);
+    } else {
+      console.error('UserProvider: Login failed: Invalid credentials');
+      throw new Error('Invalid credentials');
+    }
   };
 
+  const logout = async () => {
+    console.log('UserProvider: Logging out user:', user?.email);
+    setStoredUser(null);
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  const updateUser = (updates: Partial<MockUser>) => {
+    console.log('UserProvider: Updating user with:', updates);
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      setStoredUser(updated);
+      return updated;
+    });
+  };
+
+  const value = {
+    user,
+    login,
+    logout,
+    isAuthenticated,
+    updateUser
+  };
+
+  console.log('UserProvider: Current context value:', value);
+
   return (
-    <UserContext.Provider value={{ userProfile, updateUserProfile }}>
+    <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );
 }
 
-export const useUser = () => {
+export function useUser() {
   const context = useContext(UserContext);
   if (context === undefined) {
     throw new Error('useUser must be used within a UserProvider');
   }
   return context;
-}; 
+}

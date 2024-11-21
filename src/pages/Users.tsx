@@ -11,19 +11,53 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Filter, MoreVertical, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search,
+  Filter,
+  MoreVertical,
+  UserPlus,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import {
   MockUser,
   getPaginatedUsers,
   getUserStats,
   updateUserStatus,
   removeUser,
+  addMockUser,
 } from "@/data/mockUsers";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { DEPARTMENTS } from "@/data/mockUsers";
 
 export default function Users() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState<
-    'Medical' | 'Staff' | 'Teacher' | 'Student' | 'Admin' | undefined
+    "Medical" | "Staff" | "Teacher" | "Student" | "Admin" | undefined
   >();
   const [currentPage, setCurrentPage] = useState(1);
   const [userStats, setUserStats] = useState(getUserStats());
@@ -33,6 +67,7 @@ export default function Users() {
     totalPages: number;
     currentPage: number;
   }>({ users: [], totalUsers: 0, totalPages: 0, currentPage: 1 });
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useDocumentTitle("Users");
 
@@ -42,7 +77,41 @@ export default function Users() {
     setUserStats(getUserStats());
   }, [searchQuery, selectedRole, currentPage]);
 
-  const handleStatusChange = (userId: string, newStatus: "confirmed" | "pending") => {
+  const formSchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    role: z.enum(["Medical", "Staff", "Teacher", "Student", "Admin"]),
+    department: z.string().min(1, "Please select a department"),
+  });
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      role: "Student",
+      department: "",
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const newUser = {
+      ...values,
+      avatar: `/avatars/default.jpg`, // You might want to implement avatar upload later
+    };
+    
+    addMockUser(newUser);
+    const data = getPaginatedUsers(searchQuery, selectedRole, currentPage, 4);
+    setPaginatedData(data);
+    setUserStats(getUserStats());
+    setDialogOpen(false);
+    form.reset();
+  };
+
+  const handleStatusChange = (
+    userId: string,
+    newStatus: "confirmed" | "pending"
+  ) => {
     updateUserStatus(userId, newStatus);
     const data = getPaginatedUsers(searchQuery, selectedRole, currentPage, 4);
     setPaginatedData(data);
@@ -61,7 +130,9 @@ export default function Users() {
       <div className="grid grid-cols-5 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-sm text-gray-500 font-medium">Medical Personnel</h3>
+            <h3 className="text-sm text-gray-500 font-medium">
+              Medical Personnel
+            </h3>
             <p className="text-3xl font-bold mt-2">{userStats.medical}</p>
           </CardContent>
         </Card>
@@ -129,10 +200,98 @@ export default function Users() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button className="bg-[#7EC143] hover:bg-[#7EC143]/90">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add New User
-        </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-[#7EC143] hover:bg-[#7EC143]/90">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add New User
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New User</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="john.doe@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Medical">Medical Personnel</SelectItem>
+                          <SelectItem value="Staff">Staff</SelectItem>
+                          <SelectItem value="Teacher">Teacher</SelectItem>
+                          <SelectItem value="Student">Student</SelectItem>
+                          <SelectItem value="Admin">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="department"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Department</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a department" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(DEPARTMENTS).map(([key, value]) => (
+                            <SelectItem key={key} value={value}>
+                              {value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full">Add User</Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
@@ -144,7 +303,7 @@ export default function Users() {
             <div className="w-[100px]">Status</div>
             <div className="w-[40px]"></div>
           </div>
-          
+
           <div className="space-y-2">
             {paginatedData.users.map((user) => (
               <div
@@ -154,27 +313,23 @@ export default function Users() {
                 <div className="flex items-center gap-4 flex-[2]">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={user.avatar} />
-                    <AvatarFallback>
-                      {user.name.charAt(0)}
-                    </AvatarFallback>
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="font-medium">{user.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {user.email}
-                    </p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
                 </div>
 
                 <div className="flex-1">
                   <div>
-                    {user.department.split(' - ')[0]}
+                    {user.department.split(" - ")[0]}
                     <div className="text-xs text-gray-500 mt-1">
-                      {user.department.split(' - ')[1]}
+                      {user.department.split(" - ")[1]}
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="w-[100px]">
                   <Badge
                     variant="outline"
@@ -210,11 +365,7 @@ export default function Users() {
                 <div className="w-[40px]">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                      >
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -248,22 +399,25 @@ export default function Users() {
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t">
             <div className="text-sm text-gray-500">
-              Showing {((currentPage - 1) * 4) + 1} to {Math.min(currentPage * 4, paginatedData.totalUsers)} of {paginatedData.totalUsers} users
+              Showing {(currentPage - 1) * 4 + 1} to{" "}
+              {Math.min(currentPage * 4, paginatedData.totalUsers)} of{" "}
+              {paginatedData.totalUsers} users
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               {Array.from({ length: paginatedData.totalPages }, (_, i) => i + 1)
-                .filter(page => 
-                  page === 1 || 
-                  page === paginatedData.totalPages || 
-                  Math.abs(page - currentPage) <= 1
+                .filter(
+                  (page) =>
+                    page === 1 ||
+                    page === paginatedData.totalPages ||
+                    Math.abs(page - currentPage) <= 1
                 )
                 .map((page, i, arr) => (
                   <Fragment key={page}>
@@ -282,7 +436,11 @@ export default function Users() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(paginatedData.totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) =>
+                    Math.min(paginatedData.totalPages, prev + 1)
+                  )
+                }
                 disabled={currentPage === paginatedData.totalPages}
               >
                 <ChevronRight className="h-4 w-4" />

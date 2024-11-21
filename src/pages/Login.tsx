@@ -5,25 +5,27 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
-import { authenticateUser, setCurrentUser } from "@/utils/auth";
+import { useUser } from "@/contexts/UserContext";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 export default function Login() {
   useDocumentTitle("Login");
+  const { login } = useUser();
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = authenticateUser(username, password);
-    if (user) {
-      setCurrentUser(user);
-      navigate("/dashboard");
-    } else {
-      setError("Invalid username or password");
+    try {
+      await login(email, password);
+      console.log('Login successful, navigating to dashboard');
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      console.error('Login failed:', error);
+      setError("Invalid email or password");
     }
   };
 
@@ -40,17 +42,17 @@ export default function Login() {
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-3">
-                <label htmlFor="username" className="text-sm font-medium text-gray-700">
-                  Enter your username
+                <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Enter your email
                 </label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Username"
+                  id="email"
+                  type="email"
+                  placeholder="Email"
                   className="py-6 px-4"
                   required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-3">

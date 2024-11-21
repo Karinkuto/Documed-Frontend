@@ -4,11 +4,12 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 interface StatCardProps {
   title: string;
   value: string;
-  trend: string;
+  change: string;
+  changeType?: 'increase' | 'decrease';
 }
 
-export function StatCard({ title, value, trend }: StatCardProps) {
-  const isPositive = trend.startsWith("+");
+export function StatCard({ title, value, change, changeType = 'increase' }: StatCardProps) {
+  const isPositive = changeType === 'increase';
 
   return (
     <Card>
@@ -28,7 +29,7 @@ export function StatCard({ title, value, trend }: StatCardProps) {
             ) : (
               <TrendingDown className="h-4 w-4" />
             )}
-            <span className="ml-1 text-sm font-medium">{trend}</span>
+            <span className="ml-1 text-sm font-medium">{change}</span>
           </div>
         </div>
       </CardContent>

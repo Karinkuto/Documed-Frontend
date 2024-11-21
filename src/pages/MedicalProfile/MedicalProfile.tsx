@@ -24,12 +24,13 @@ import {
   UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import mockMedicalRecords from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import InfoItem from "@/components/InfoItem";
 import Timeline from "@/components/Timeline";
 import { getStatusColor } from "@/types/MedicalRecord";
+import { useMedicalRecordStore } from "@/stores/medicalRecordStore";
+import { useEffect } from "react";
 
 // New components
 import MedicalMetricsChart from "./MedicalMetricsChart";
@@ -68,11 +69,44 @@ const VitalSign = ({ icon, label, value, unit, trend }: VitalSignProps) => (
 export default function MedicalProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const record = mockMedicalRecords.find((r) => r.id === id);
+  const { records, loadRecords, isLoading, error } = useMedicalRecordStore();
+  
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords]);
+
+  const record = records.find((r) => r.id === id);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-500">Error loading medical record: {error}</div>
+      </div>
+    );
+  }
 
   if (!record) {
-    return <div>Patient not found</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <div className="text-gray-500">Medical record not found</div>
+        <Button onClick={() => navigate('/medical-repository')}>
+          Back to Repository
+        </Button>
+      </div>
+    );
   }
+
+  // Safely access nested properties
+  const personalInfo = record.personalInfo || {};
+  const address = personalInfo.address || {};
 
   return (
     <div className="min-h-screen">
@@ -91,7 +125,7 @@ export default function MedicalProfile() {
           </div>
         </div>
 
-        {/* Profile Header Card - Enhanced */}
+        {/* Profile Header Card */}
         <Card className="mb-6 overflow-hidden">
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b">
             <div className="flex items-center gap-6">
@@ -115,7 +149,7 @@ export default function MedicalProfile() {
                         ID: {record.patientId}
                       </Badge>
                       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
-                        {record.bloodType}
+                        {record.bloodType || 'Not specified'}
                       </Badge>
                       <Badge
                         className={cn(
@@ -159,7 +193,7 @@ export default function MedicalProfile() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Email</p>
                   <p className="text-sm text-gray-900">
-                    {record.personalInfo.email}
+                    {personalInfo.email || 'Not specified'}
                   </p>
                 </div>
               </div>
@@ -168,10 +202,15 @@ export default function MedicalProfile() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Address</p>
                   <p className="text-sm text-gray-900">
-                    {record.personalInfo.address.street}
-                    <br />
-                    {record.personalInfo.address.city},{" "}
-                    {record.personalInfo.address.country}
+                    {address.street ? (
+                      <>
+                        {address.street}
+                        <br />
+                        {address.city}, {address.country}
+                      </>
+                    ) : (
+                      'Not specified'
+                    )}
                   </p>
                 </div>
               </div>
@@ -182,7 +221,7 @@ export default function MedicalProfile() {
                     Date of Birth
                   </p>
                   <p className="text-sm text-gray-900">
-                    {record.personalInfo.dateOfBirth}
+                    {personalInfo.dateOfBirth || 'Not specified'}
                   </p>
                 </div>
               </div>
@@ -191,7 +230,7 @@ export default function MedicalProfile() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Gender</p>
                   <p className="text-sm text-gray-900">
-                    {record.personalInfo.gender}
+                    {personalInfo.gender || 'Not specified'}
                   </p>
                 </div>
               </div>
@@ -202,7 +241,7 @@ export default function MedicalProfile() {
                     Nationality
                   </p>
                   <p className="text-sm text-gray-900">
-                    {record.personalInfo.nationality}
+                    {personalInfo.nationality || 'Not specified'}
                   </p>
                 </div>
               </div>
@@ -213,7 +252,7 @@ export default function MedicalProfile() {
                     Marital Status
                   </p>
                   <p className="text-sm text-gray-900">
-                    {record.personalInfo.maritalStatus}
+                    {personalInfo.maritalStatus || 'Not specified'}
                   </p>
                 </div>
               </div>
@@ -318,7 +357,7 @@ export default function MedicalProfile() {
                           Allergies & Reactions
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                          {record.allergies.map((allergy, index) => (
+                          {(record.allergies || []).map((allergy, index) => (
                             <Badge
                               key={index}
                               variant="outline"
@@ -512,7 +551,7 @@ export default function MedicalProfile() {
                   <CardContent>
                     <div className="relative space-y-3">
                       <div className="absolute top-0 bottom-0 left-[16px] w-[1px] bg-gray-100" />
-                      {record.activityLog.slice(0, 5).map((activity, index) => (
+                      {(record.activityLog || []).slice(0, 5).map((activity, index) => (
                         <div key={index} className="relative pl-10">
                           <div
                             className={cn(

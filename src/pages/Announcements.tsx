@@ -89,12 +89,12 @@ const FilterBadge = ({
 export default function Announcements() {
   useDocumentTitle("Announcements");
   const [searchQuery, setSearchQuery] = useState("");
-  const { userProfile } = useUser();
+  const { user } = useUser();
 
   const currentUser = {
-    name: userProfile.fullName,
-    avatar: userProfile.avatar || "/avatars/default.jpg",
-    role: userProfile.role,
+    name: user?.fullName || "Anonymous",
+    avatar: user?.avatar || "/avatars/default.jpg",
+    role: user?.role || "User",
   };
 
   // Mock data for announcements
