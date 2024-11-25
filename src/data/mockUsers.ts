@@ -19,7 +19,7 @@ export const mockUsers: MockUser[] = [
   {
     id: '1',
     name: 'Dr. John Smith',
-    email: 'john.smith@example.com',
+    email: 'john.smith@bitscollege.edu.et',
     avatar: '/avatars/john.jpg',
     role: 'Medical',
     department: DEPARTMENTS.SE_UG,
@@ -28,7 +28,7 @@ export const mockUsers: MockUser[] = [
   {
     id: '2',
     name: 'Emma Wilson',
-    email: 'emma.w@example.com',
+    email: 'emma.w@bitscollege.edu.et',
     avatar: '/avatars/emma.jpg',
     role: 'Student',
     department: DEPARTMENTS.SE_UG,
@@ -37,7 +37,7 @@ export const mockUsers: MockUser[] = [
   {
     id: '3',
     name: 'Michael Brown',
-    email: 'm.brown@example.com',
+    email: 'm.brown@bitscollege.edu.et',
     avatar: '/avatars/michael.jpg',
     role: 'Teacher',
     department: DEPARTMENTS.ITS_UG,
@@ -46,7 +46,7 @@ export const mockUsers: MockUser[] = [
   {
     id: '4',
     name: 'Sarah Davis',
-    email: 'sarah.d@example.com',
+    email: 'sarah.d@bitscollege.edu.et',
     avatar: '/avatars/sarah.jpg',
     role: 'Student',
     department: DEPARTMENTS.ITS_UG,
@@ -55,7 +55,7 @@ export const mockUsers: MockUser[] = [
   {
     id: '5',
     name: 'James Wilson',
-    email: 'j.wilson@example.com',
+    email: 'j.wilson@bitscollege.edu.et',
     avatar: '/avatars/james.jpg',
     role: 'Teacher',
     department: DEPARTMENTS.ESE_G,
@@ -64,7 +64,7 @@ export const mockUsers: MockUser[] = [
   {
     id: '6',
     name: 'Lisa Anderson',
-    email: 'l.anderson@example.com',
+    email: 'l.anderson@bitscollege.edu.et',
     avatar: '/avatars/lisa.jpg',
     role: 'Student',
     department: DEPARTMENTS.ESE_G,
@@ -73,7 +73,7 @@ export const mockUsers: MockUser[] = [
   {
     id: '7',
     name: 'Robert Taylor',
-    email: 'r.taylor@example.com',
+    email: 'r.taylor@bitscollege.edu.et',
     avatar: '/avatars/robert.jpg',
     role: 'Teacher',
     department: DEPARTMENTS.ITM_G,
@@ -82,7 +82,7 @@ export const mockUsers: MockUser[] = [
   {
     id: '8',
     name: 'Emily White',
-    email: 'e.white@example.com',
+    email: 'e.white@bitscollege.edu.et',
     avatar: '/avatars/emily.jpg',
     role: 'Student',
     department: DEPARTMENTS.ITM_G,

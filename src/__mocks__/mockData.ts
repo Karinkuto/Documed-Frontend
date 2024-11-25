@@ -36,7 +36,7 @@ export const mockMedicalRecords: MedicalRecord[] = [
     lastVisit: '2023-10-15',
     bloodType: 'A+',
     personalInfo: {
-      email: 'john.smith@example.com',
+      email: 'john.smith@bitscollege.edu.et',
       dateOfBirth: '1985-03-15',
       gender: 'male',
       address: {
@@ -62,7 +62,7 @@ export const mockMedicalRecords: MedicalRecord[] = [
     lastVisit: '2023-10-16',
     bloodType: 'O+',
     personalInfo: {
-      email: 'sarah.j@example.com',
+      email: 'sarah.j@bitscollege.edu.et',
       dateOfBirth: '1990-07-22',
       gender: 'female',
       address: {

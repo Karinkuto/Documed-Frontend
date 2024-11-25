@@ -531,7 +531,7 @@ export function AddMedicalRecordDialog({
                             email: e.target.value,
                           }))
                         }
-                        placeholder="patient@example.com"
+                        placeholder="patient@bitscollege.edu.et"
                         className={errors.email ? "border-red-500" : ""}
                       />
                       {errors.email && (

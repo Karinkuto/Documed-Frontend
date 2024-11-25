@@ -1,10 +1,23 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { getCurrentUser } from '@/utils/auth';
+import { useUser } from '@/contexts/UserContext';
+import { requiresPasswordChange } from '@/utils/auth';
 
-const PrivateRoute = () => {
-  const currentUser = getCurrentUser();
+interface PrivateRouteProps {
+  children?: React.ReactNode;
+}
 
-  return currentUser ? <Outlet /> : <Navigate to="/login" />;
+const PrivateRoute = ({ children }: PrivateRouteProps) => {
+  const { user, isAuthenticated } = useUser();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  if (requiresPasswordChange(user)) {
+    return <Navigate to="/change-password" />;
+  }
+
+  return children || <Outlet />;
 };
 
 export default PrivateRoute;

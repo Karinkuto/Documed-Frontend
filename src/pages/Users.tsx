@@ -233,7 +233,7 @@ export default function Users() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="john.doe@example.com" {...field} />
+                        <Input placeholder="john.doe@bitscollege.edu.et" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,19 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Lock, Globe, Sliders, User, Upload } from "lucide-react";
+import { 
+  Bell, 
+  Lock, 
+  Globe, 
+  Sliders, 
+  User, 
+  Upload,
+  Shield,
+  Users,
+  Database,
+  Activity,
+  Settings as SettingsIcon
+} from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -23,11 +35,35 @@ import { stringToColor } from "@/utils/helpers";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function Settings() {
   useDocumentTitle("Settings");
   const [isSaving, setIsSaving] = useState(false);
   const { user, updateUser } = useUser();
+  const [auditLogs, setAuditLogs] = useState<Array<{
+    action: string;
+    timestamp: string;
+    user: string;
+    details: string;
+  }>>([]);
+  const [systemSettings, setSystemSettings] = useState({
+    maintenanceMode: false,
+    debugMode: false,
+    maxUploadSize: "10",
+    sessionTimeout: "30",
+    backupFrequency: "daily",
+    allowRegistration: true,
+    requireEmailVerification: true,
+  });
+
   const [formData, setFormData] = useState({
     bio: user?.bio || "",
     phone: user?.phone || "",
@@ -93,6 +129,25 @@ export default function Settings() {
       }));
     };
 
+  // Add new admin-specific functions
+  const handleSystemSettingChange = (setting: keyof typeof systemSettings, value: any) => {
+    setSystemSettings(prev => {
+      const newSettings = { ...prev, [setting]: value };
+      // Log the change
+      addAuditLog({
+        action: "System Setting Changed",
+        details: `Changed ${setting} to ${value}`,
+        user: user?.fullName || "Unknown",
+        timestamp: new Date().toISOString(),
+      });
+      return newSettings;
+    });
+  };
+
+  const addAuditLog = (log: typeof auditLogs[0]) => {
+    setAuditLogs(prev => [log, ...prev].slice(0, 100)); // Keep last 100 logs
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
@@ -124,6 +179,18 @@ export default function Settings() {
             <Sliders className="w-4 h-4 mr-2" />
             System
           </TabsTrigger>
+          {user?.role === "Admin" && (
+            <>
+              <TabsTrigger value="admin">
+                <Shield className="w-4 h-4 mr-2" />
+                Admin
+              </TabsTrigger>
+              <TabsTrigger value="audit">
+                <Activity className="w-4 h-4 mr-2" />
+                Audit Log
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="profile">
@@ -605,38 +672,220 @@ export default function Settings() {
         <TabsContent value="system">
           <Card>
             <CardContent className="space-y-6 p-6">
-              <div className="space-y-2">
-                <Label>Data Retention Period</Label>
-                <Select defaultValue="90">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 days</SelectItem>
-                    <SelectItem value="90">90 days</SelectItem>
-                    <SelectItem value="180">180 days</SelectItem>
-                    <SelectItem value="365">1 year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Export Data</Label>
-                <p className="text-sm text-gray-500 mb-2">
-                  Download all your system data in CSV format
-                </p>
-                <Button variant="outline">Export Data</Button>
-              </div>
-
-              <div className="pt-4 border-t">
-                <h3 className="text-sm font-medium text-red-600 mb-2">
-                  Danger Zone
-                </h3>
-                <Button variant="destructive">Delete Account</Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">System Preferences</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label>Dark Mode</Label>
+                          <p className="text-sm text-gray-500">Enable dark mode interface</p>
+                        </div>
+                        <Switch
+                          checked={user?.darkMode}
+                          onCheckedChange={(checked) => updateUser({ darkMode: checked })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label>Compact View</Label>
+                          <p className="text-sm text-gray-500">Use compact layout for tables and lists</p>
+                        </div>
+                        <Switch
+                          checked={user?.compactView}
+                          onCheckedChange={(checked) => updateUser({ compactView: checked })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {user?.role === "Admin" && (
+          <>
+            <TabsContent value="admin">
+              <Card>
+                <CardContent className="space-y-6 p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4">System Configuration</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Maintenance Mode</Label>
+                              <p className="text-sm text-gray-500">Put system in maintenance mode</p>
+                            </div>
+                            <Switch
+                              checked={systemSettings.maintenanceMode}
+                              onCheckedChange={(checked) => 
+                                handleSystemSettingChange("maintenanceMode", checked)
+                              }
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Debug Mode</Label>
+                              <p className="text-sm text-gray-500">Enable detailed error logging</p>
+                            </div>
+                            <Switch
+                              checked={systemSettings.debugMode}
+                              onCheckedChange={(checked) => 
+                                handleSystemSettingChange("debugMode", checked)
+                              }
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Max Upload Size (MB)</Label>
+                            <Select
+                              value={systemSettings.maxUploadSize}
+                              onValueChange={(value) => 
+                                handleSystemSettingChange("maxUploadSize", value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="5">5 MB</SelectItem>
+                                <SelectItem value="10">10 MB</SelectItem>
+                                <SelectItem value="20">20 MB</SelectItem>
+                                <SelectItem value="50">50 MB</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Session Timeout (minutes)</Label>
+                            <Select
+                              value={systemSettings.sessionTimeout}
+                              onValueChange={(value) => 
+                                handleSystemSettingChange("sessionTimeout", value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="15">15 minutes</SelectItem>
+                                <SelectItem value="30">30 minutes</SelectItem>
+                                <SelectItem value="60">1 hour</SelectItem>
+                                <SelectItem value="120">2 hours</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4">Security Settings</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Allow Registration</Label>
+                              <p className="text-sm text-gray-500">Enable new user registration</p>
+                            </div>
+                            <Switch
+                              checked={systemSettings.allowRegistration}
+                              onCheckedChange={(checked) => 
+                                handleSystemSettingChange("allowRegistration", checked)
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Require Email Verification</Label>
+                              <p className="text-sm text-gray-500">Users must verify email to access system</p>
+                            </div>
+                            <Switch
+                              checked={systemSettings.requireEmailVerification}
+                              onCheckedChange={(checked) => 
+                                handleSystemSettingChange("requireEmailVerification", checked)
+                              }
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Backup Frequency</Label>
+                            <Select
+                              value={systemSettings.backupFrequency}
+                              onValueChange={(value) => 
+                                handleSystemSettingChange("backupFrequency", value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="audit">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Audit Log</h3>
+                      <Button variant="outline" onClick={() => setAuditLogs([])}>
+                        Clear Log
+                      </Button>
+                    </div>
+                    
+                    <div className="border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Timestamp</TableHead>
+                            <TableHead>User</TableHead>
+                            <TableHead>Action</TableHead>
+                            <TableHead>Details</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {auditLogs.map((log, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
+                              <TableCell>{log.user}</TableCell>
+                              <TableCell>{log.action}</TableCell>
+                              <TableCell>{log.details}</TableCell>
+                            </TableRow>
+                          ))}
+                          {auditLogs.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center text-gray-500">
+                                No audit logs available
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );

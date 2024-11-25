@@ -30,45 +30,130 @@ const saveRecords = (records: MedicalRecord[]) => {
 };
 
 // Initialize with default data if empty
-const defaultRecord: MedicalRecord = {
-  id: "1",
-  patientName: "John Doe",
-  patientId: "PT123456789",
-  role: "patient",
-  status: "active",
-  bloodType: "A+",
-  diagnosis: "Regular checkup",
-  treatment: "None required",
-  notes: "Patient is in good health",
-  lastVisit: "2024-01-15",
-  patientAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John%20Doe",
-  personalInfo: {
-    email: "john.doe@example.com",
-    dateOfBirth: "1985-06-15",
-    gender: "male",
-    nationality: "US",
-    maritalStatus: "married",
-    address: {
-      street: "123 Main St",
-      city: "Springfield",
-      state: "IL",
-      zipCode: "62701",
-      country: "USA"
-    }
-  },
-  emergencyContact: {
-    name: "Jane Doe",
-    relationship: "Spouse",
-    phone: "+1234567890",
-    email: "jane.doe@example.com"
+const defaultRecords: MedicalRecord[] = [
+  {
+    id: "REC-001",
+    patientId: "567868",
+    patientName: "Alemitu Barbara",
+    patientAvatar: "/avatars/alemitu.jpg",
+    personalInfo: {
+      age: 24,
+      gender: "Female",
+      dateOfBirth: "1999-08-15",
+      nationality: "Ethiopian",
+      maritalStatus: "Single",
+      email: "alemitu.barbara@bitscollege.edu.et",
+      address: {
+        street: "123 University St",
+        city: "Addis Ababa",
+        country: "Ethiopia",
+      },
+    },
+    bloodType: "O-",
+    diagnosis: "Seasonal Allergies",
+    medications: ["Cetirizine 10mg"],
+    allergies: ["Pollen", "Dust"],
+    lastVisit: "2024-05-24",
+    status: "active",
+    role: "Student",
+    documents: [
+      {
+        id: "DOC-001",
+        title: "Vaccination Record",
+        category: "Health Reports",
+        uploadDate: "2024-11-30",
+        size: "1.2 MB",
+        type: "report",
+      },
+    ],
+    activityLog: [
+      {
+        action: "Last Login",
+        date: "2024-05-24",
+        time: "09:27 AM",
+      },
+      {
+        action: "Document Upload",
+        date: "2024-11-30",
+        time: "02:09 AM",
+        details: "Vaccination Record",
+      },
+      {
+        action: "File Access",
+        date: "2024-03-09",
+        time: "07:33 AM",
+        details: "Downloaded Medical Info",
+      },
+      {
+        action: "Form Submission",
+        date: "2024-09-13",
+        time: "05:45 AM",
+        details: "Medical History Update",
+      },
+      {
+        action: "Profile Update",
+        date: "2024-04-06",
+        time: "03:07 AM",
+        details: "Emergency Contact Changed",
+      },
+    ],
+    prescriptions: [
+      {
+        medication: "Amoxicillin",
+        dosage: "500mg",
+        frequency: "3 times daily",
+        prescribedBy: "Smith",
+        status: "Active",
+        startDate: "2024-03-01",
+        endDate: "2024-03-14",
+        instructions: "Take with food. Complete full course."
+      }
+    ],
+    prescriptionHistory: [
+      {
+        medication: "Ibuprofen",
+        period: "Jan 2024 - Feb 2024",
+        status: "Completed"
+      }
+    ]
   }
-};
+];
 
 let mockMedicalRecords = getStoredRecords();
 if (mockMedicalRecords.length === 0) {
-  mockMedicalRecords = [defaultRecord];
+  mockMedicalRecords = defaultRecords;
   saveRecords(mockMedicalRecords);
 }
+
+// Image handlers
+const imageHandlers = [
+  http.get('/placeholder.svg', () => {
+    return new HttpResponse(null, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/svg+xml',
+      },
+    });
+  }),
+
+  http.get('/avatars/*', () => {
+    return new HttpResponse(null, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/jpeg',
+      },
+    });
+  }),
+
+  http.get('https://api.dicebear.com/7.x/avataaars/svg*', () => {
+    return new HttpResponse(null, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/svg+xml',
+      },
+    });
+  }),
+];
 
 export const handlers = [
   // Medical Records handlers
@@ -198,4 +283,6 @@ export const handlers = [
     const timeline = mockTimeline.filter(item => item.patientId === patientId);
     return HttpResponse.json({ data: timeline });
   }),
+
+  ...imageHandlers,
 ];

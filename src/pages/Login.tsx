@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,22 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isTimeout = searchParams.get('timeout') === 'true';
+
+  useEffect(() => {
+    if (isTimeout) {
+      setError("Your session has expired. Please log in again.");
+    }
+  }, [isTimeout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     try {
-      await login(email, password);
+      await login(`${email}@bitscollege.edu.et`, password);
       console.log('Login successful, navigating to dashboard');
       navigate("/dashboard", { replace: true });
     } catch (error) {
@@ -45,15 +56,23 @@ export default function Login() {
                 <label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Enter your email
                 </label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Email"
-                  className="py-6 px-4"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    id="email"
+                    type="text"
+                    placeholder="username"
+                    className="py-6 px-4 pr-[180px]"
+                    required
+                    value={email}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/@bitscollege\.edu\.et$/, '');
+                      setEmail(value);
+                    }}
+                  />
+                  <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    @bitscollege.edu.et
+                  </span>
+                </div>
               </div>
               <div className="space-y-3">
                 <label htmlFor="password" className="text-sm font-medium text-gray-700">
@@ -104,7 +123,7 @@ export default function Login() {
               </Button>
               <div className="text-center text-sm text-gray-500">
                 Don't have an account?{" "}
-                <Button variant="link" className="p-0">
+                <Button variant="link" className="p-0" onClick={() => navigate("/register")}>
                   Sign up
                 </Button>
               </div>

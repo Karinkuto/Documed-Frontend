@@ -30,7 +30,7 @@ export const mockMedicalRecords: MedicalRecord[] = [
       dateOfBirth: "1999-08-15",
       nationality: "Ethiopian",
       maritalStatus: "Single",
-      email: "alemitu.barbara@example.com",
+      email: "alemitu.barbara@bitscollege.edu.et",
       address: {
         street: "123 University St",
         city: "Addis Ababa",

@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
+import { UserProvider } from '@/contexts/UserContext'
 
 async function prepare() {
   // Initialize MSW in development only when using mock API
@@ -15,7 +16,9 @@ async function prepare() {
 prepare().then(() => {
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-      <App />
+      <UserProvider>
+        <App />
+      </UserProvider>
     </React.StrictMode>,
   );
 });
